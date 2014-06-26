@@ -1,29 +1,26 @@
 package eu.stratosphere.fab.extensions.beans.system.stratosphere
 
+import java.io.File
+
+import com.github.mustachejava.MustacheFactory
 import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, System}
-import eu.stratosphere.fab.core.ExecutionContext
 import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
 
-/**
- * Created by felix on 01.06.14.
- */
-class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set()) extends ExperimentRunner(lifespan, dependencies) {
+class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mf: MustacheFactory) extends ExperimentRunner("Stratosphere", lifespan, dependencies, mf) {
 
-  def setUp(): Unit = {
-    logger.info("Setting up " + toString + "...")
+  override def setUp(): Unit = {
+    logger.info(s"Starting system '$toString'...")
   }
 
-  override def run(ctx: ExecutionContext) = {
+  override def tearDown(): Unit = {
+    logger.info(s"Tearing down system '$toString'...")
+  }
+
+  override def update(): Unit = {
+    logger.info(s"Updating system '$toString'...")
+  }
+
+  override def run(job: String, input: List[File], output: File) = {
     logger.info("Running Stratosphere Job...")
   }
-
-  def tearDown(): Unit = {
-    logger.info("Tearing down " + toString + "...")
-  }
-
-  def update(): Unit = {
-    logger.info("Updating " + toString + "...")
-  }
-
-  override def toString = "Stratosphere v0.5"
 }

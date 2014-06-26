@@ -1,88 +1,107 @@
 package eu.stratosphere.fab.core.beans.experiment
 
-import eu.stratosphere.fab.core.{ExecutionContext, Node, DependencyGraph}
-import eu.stratosphere.fab.core.beans.system.{Lifespan, ExperimentRunner, System}
+import com.typesafe.config.ConfigFactory
+import eu.stratosphere.fab.core.beans.system.{Lifespan, System}
+import eu.stratosphere.fab.core.context.ExecutionContext
+import eu.stratosphere.fab.core.graph.{Node, DependencyGraph}
 import org.slf4j.LoggerFactory
 
-/**
- * Created by felix on 02.06.14.
- */
-class ExperimentSuite(final val experiments: List[Experiment]) extends Node{
+class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
 
-  def run() =  {
+  def run() = {
 
-    val depGraph: DependencyGraph[Node] = createGraph()
-    val context: ExecutionContext = new ExecutionContext(depGraph)
-
+    val graph = createGraph()
 
     //TODO check for cycles in the graph
-    if(!depGraph.isEmpty) {
-      logger.info("Succesfulyy created experiment graph: \n " + depGraph)
-    }
-    else {
-      throw new RuntimeException("Could not create Graph! (Graph is empty)")
+    if (graph.isEmpty)
+      throw new RuntimeException("Suite is empty!")
+
+    logger.info("Constructed dependency graph for suite.")
+    //logger.info(ctx.depGraph.toString)
+
+    val ctx = ExecutionContext(graph, loadConfig(graph))
+
+    for (n <- ctx.graph.reverse.dfs()) n match {
+      case s: System => s.config = Some(ctx.config)
+      case _ => Unit
     }
 
-    // setup all systems with suite lifecycle
     try {
-      setUpSuite(depGraph)
-      for (exp <- experiments) exp.run(context)
+      setUp(ctx)
+      //      for (exp <- experiments) exp.run(ctx)
     } catch {
-      case e: Exception => logger.info("Exception in ExperimentSuite: %s".format(e.getMessage))
+      case e: Exception => logger.error(s"Exception in ExperimentSuite: ${e.getMessage}")
     } finally {
-      tearDownSuite(depGraph)
+      tearDown(ctx)
     }
+  }
 
+  private def loadConfig(graph: DependencyGraph[Node]) = {
+    var config = ConfigFactory.load()
+    for (n <- graph.reverse.dfs()) n match {
+      case s: System =>
+        config = ConfigFactory.load(s.name).withFallback(
+          if (s.name != s.defaultName)
+            ConfigFactory.load(s.defaultName).withFallback(config)
+          else
+            config)
+      case _ => Unit
+    }
+    config
   }
 
   /**
-   * Set up all systems with lifecycle suite in the graph
-   * @param g the dependency graph
-   * @return nothing
+   * Set up all systems with SUITE lifespan.
+   *
+   * @param ctx The execution context.
    */
-  def setUpSuite(g: DependencyGraph[Node]) = {
-    for(s <- g.reverse.dfs()) yield {s match {
+  private def setUp(ctx: ExecutionContext) = {
+    for (n <- ctx.graph.reverse.dfs()) n match {
       case s: System => if (s.lifespan == Lifespan.SUITE) s.setUp()
-      case x => x
-    }}
+      case _ => Unit
+    }
   }
-
-  def tearDownSuite(g: DependencyGraph[Node]) = {
-    for(s <- g.reverse.dfs()) yield {s match {
-      case s: System => if (s.lifespan == Lifespan.SUITE) s.tearDown()
-      case x => x
-    }}
-  }
-
-
 
   /**
-   * create a directed Graph from all Experiments and their dependencies
+   * Tear down all dependencies with SUITE lifespan.
+   *
+   * @param ctx The execution context.
+   */
+  private def tearDown(ctx: ExecutionContext) = {
+    for (n <- ctx.graph.reverse.dfs().reverse) n match {
+      case s: System => if (s.lifespan == Lifespan.SUITE) s.tearDown()
+      case _ => Unit
+    }
+  }
+
+  /**
+   * Create a directed Graph from all Experiments and their dependencies.
+   *
    * @return Graph with systems as vertices and dependencies as edges
    */
-  def createGraph(): DependencyGraph[Node] = {
+  private def createGraph(): DependencyGraph[Node] = {
+
     val g = new DependencyGraph[Node]
 
-    def getDependencies(s: System): Unit = {
-      if(!s.dependencies.isEmpty) {
-        for(d <- s.dependencies) yield {
+    def processDependencies(s: System): Unit = {
+      if (s.dependencies.nonEmpty) {
+        for (d <- s.dependencies) {
           g.addEdge(s, d)
-          getDependencies(d)
+          processDependencies(d)
         }
       }
     }
 
-    for(e <- experiments) yield {
+    for (e <- experiments) {
       g.addEdge(this, e)
-      val r: ExperimentRunner = e.runner
-      g.addEdge(e, r)
-      getDependencies(r)
+      g.addEdge(e, e.runner)
+      processDependencies(e.runner)
     }
 
-    g // return Graph
+    g // return the graph
   }
 
-
+  override def toString = "Experiment Suite"
 }

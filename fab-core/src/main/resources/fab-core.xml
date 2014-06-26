@@ -6,12 +6,8 @@
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <!-- Properties configuration -->
-    <context:property-placeholder location="classpath:fab-core.properties"/>
-
     <!-- converters for scala collections -->
-    <bean id="conversionService"
-          class="org.springframework.context.support.ConversionServiceFactoryBean">
+    <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
         <property name="converters">
             <set>
                 <bean class="eu.stratosphere.fab.core.beans.StringToScalaEnum"/>
@@ -19,5 +15,14 @@
                 <bean class="eu.stratosphere.fab.core.beans.JavaSetToScalaSet"/>
             </set>
         </property>
+    </bean>
+
+    <bean id="mf" class="com.github.mustachejava.DefaultMustacheFactory">
+        <constructor-arg name="resourceRoot" value="templates"/>
+    </bean>
+
+
+    <bean id="system" abstract="true">
+        <constructor-arg name="mf" ref="mf"/>
     </bean>
 </beans>

@@ -40,6 +40,9 @@
         <!-- Config -->
         <config.version>1.2.1</config.version>
 
+        <!-- Templating -->
+        <mustache.version>0.8.15</mustache.version>
+
     </properties>
 
 
@@ -99,6 +102,13 @@
                 <groupId>com.typesafe</groupId>
                 <artifactId>config</artifactId>
                 <version>${config.version}</version>
+            </dependency>
+
+            <!-- Templating -->
+            <dependency>
+                <groupId>com.github.spullara.mustache.java</groupId>
+                <artifactId>compiler</artifactId>
+                <version>${mustache.version}</version>
             </dependency>
 
             <!-- Logging -->

@@ -1,11 +1,7 @@
-package eu.stratosphere.fab.core
+package eu.stratosphere.fab.core.graph
 
-import scala.collection.mutable.HashMap
 import scala.annotation.tailrec
-
-/**
- * Created by felix on 02.06.14.
- */
+import scala.collection.mutable.HashMap
 
 class DependencyGraph[T] {
 
@@ -60,7 +56,7 @@ class DependencyGraph[T] {
    */
   def hasEdge(src: T): Boolean = {
     graph.get(src) match {
-      case Some(s) => if(s == Set()) false else true
+      case Some(s) => if (s == Set()) false else true
       case _ => false
     }
   }
@@ -111,7 +107,7 @@ class DependencyGraph[T] {
       }
     }
 
-    if(start != (vertices diff edges))
+    if (start != (vertices diff edges))
       loop(start ++ (vertices diff edges), List()).reverse
     else
       loop(start, List()).reverse
@@ -143,19 +139,21 @@ class DependencyGraph[T] {
    * @return new Graph with reversed edges
    */
   def reverse: DependencyGraph[T] = {
-    if(!isEmpty) {
+    if (!isEmpty) {
       val newGraph = new DependencyGraph[T]()
-        for {
-          (vertex, neighbours) <- graph.toList
-          neighbour <- neighbours
-        } yield newGraph.addEdge(neighbour, vertex)
+      for {
+        (vertex, neighbours) <- graph.toList
+        neighbour <- neighbours
+      } yield newGraph.addEdge(neighbour, vertex)
       newGraph
     } else
       throw new Exception("Cannot reverse empty Graph!")
   }
 
   override def toString: String = {
-    (for(v <- vertices; e <- graph.get(v)) yield {v.toString + " --> " + e.toString}).mkString("\n")
+    (for (v <- vertices.toList; e <- graph.get(v)) yield {
+      v.toString + " --> " + e.toString
+    }).mkString("\n")
   }
 
   override def equals(that: Any) = that match {

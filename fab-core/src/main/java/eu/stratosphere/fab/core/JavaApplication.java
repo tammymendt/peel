@@ -6,9 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-/**
- * @author Alexander Alexandrov <alexander.alexandrov@tu-berlin.de>
- */
 public class JavaApplication {
 
     static Logger logger = LoggerFactory.getLogger(JavaApplication.class);
@@ -22,7 +19,12 @@ public class JavaApplication {
         AbstractApplicationContext context = new ClassPathXmlApplicationContext("fab-core.xml", "fab-extensions.xml", experimentsConfigPath);
         context.registerShutdownHook();
 
-        ExperimentSuite experimentSuite = context.getBean("experiments", ExperimentSuite.class);
-        experimentSuite.run();
+        try {
+            ExperimentSuite experimentSuite = context.getBean("experiments", ExperimentSuite.class);
+            experimentSuite.run();
+        } catch (Exception e) {
+            logger.error("Error in experiment suite: " + e.getMessage());
+            System.exit(-1);
+        }
     }
 }

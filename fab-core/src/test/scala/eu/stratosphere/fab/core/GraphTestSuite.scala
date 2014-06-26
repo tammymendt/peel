@@ -1,5 +1,6 @@
 package eu.stratosphere.fab.core
 
+import eu.stratosphere.fab.core.graph.DependencyGraph
 import org.scalatest.{Matchers, FunSuite}
 import scala.collection.mutable
 
