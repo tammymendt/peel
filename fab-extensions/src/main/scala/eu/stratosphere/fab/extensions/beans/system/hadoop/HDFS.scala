@@ -1,7 +1,7 @@
 package eu.stratosphere.fab.extensions.beans.system.hadoop
 
-import com.github.mustachejava.{DefaultMustacheFactory, MustacheFactory}
-import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, FileSystem, System}
+import com.github.mustachejava.MustacheFactory
+import eu.stratosphere.fab.core.beans.system.{FileSystem, System}
 import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
 import eu.stratosphere.fab.core.config.namevalue
 import eu.stratosphere.fab.core.util.Shell
@@ -124,9 +124,15 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mf: MustacheFa
   def configure() = {
     logger.info(s"Configuring " + toString + "...")
 
-    val mustache = mf.compile("hadoop/conf/core-site.xml.mustache")
+    val siteTemplate = mf.compile("hadoop/conf/site.xml.mustache")
+    val envTemplate = mf.compile("hadoop/conf/hadoop-env.sh.mustache")
 
-    mustache.execute(new PrintWriter(System.out), new namevalue.Context(config.get, "system.hadoop.config.core-site")).flush()
+    //envTemplate.execute(new PrintWriter(System.out), new namevalue.Context(config.get, "system.hadoop.config.env")).flush()
+    val coreSiteFile = new File(s"${config.get.getString("system.hadoop.paths.config")}/core-site.xml")
+    val hdfsSiteFile = new File(s"${config.get.getString("system.hadoop.paths.config")}/core-site.xml")
+
+    siteTemplate.execute(new PrintWriter(coreSiteFile), new namevalue.Context(config.get, "system.hadoop.config.core-site")).flush()
+    siteTemplate.execute(new PrintWriter(hdfsSiteFile), new namevalue.Context(config.get, "system.hadoop.config.hdfs-site")).flush()
 
     Unit
 
