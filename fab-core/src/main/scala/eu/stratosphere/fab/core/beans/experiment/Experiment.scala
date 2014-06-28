@@ -2,7 +2,7 @@ package eu.stratosphere.fab.core.beans.experiment
 
 import java.io.File
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.Config
 import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, FileSystem, Lifespan, System}
 import eu.stratosphere.fab.core.context.ExecutionContext
 import eu.stratosphere.fab.core.graph.Node
@@ -10,11 +10,9 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
-class Experiment(val runner: ExperimentRunner, val arguments: List[String] = List()) extends Node {
+class Experiment(val runner: ExperimentRunner, val config: Config, val arguments: List[String] = List()) extends Node {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
-
-  final val config = ConfigFactory.empty()
 
   def run(ctx: ExecutionContext) = {
 //    logger.info("Starting experiment sequence with %d element(s)...".format(sequence.length))

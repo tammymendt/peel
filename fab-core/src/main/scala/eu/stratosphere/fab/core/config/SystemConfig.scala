@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 case class SystemConfig(config: Config, entries: List[SystemConfig.Entry[Model]]) {
 
-  def hasChanged() = (for (e <- entries) yield
+  def hasChanged = (for (e <- entries) yield
     e.hasChanged(config)
     ).fold(false)(_ || _)
 

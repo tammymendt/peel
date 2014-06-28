@@ -4,26 +4,19 @@ import eu.stratosphere.fab.core.beans.system.Lifespan;
 import org.springframework.core.convert.converter.Converter;
 import scala.Enumeration.Value;
 
-/**
- * Created by felix on 09.06.14.
- */
-public class StringToScalaEnum implements Converter<String, Value>{
+public class StringToScalaEnum implements Converter<String, Value> {
 
+    @Override
     public Value convert(String s) {
-        if(s.equals("SUITE")) {
-            return Lifespan.SUITE();
-        }
-        else if(s.equals("EXP_SEQ")) {
-            return Lifespan.EXP_SEQ();
-        }
-        else if(s.equals(("EXPERIMENT"))) {
-            return Lifespan.EXPERIMENT();
-        }
-        else if(s.equals("EXPERIMENT_RUN")) {
-            return Lifespan.EXPERIMENT_RUN();
-        }
-        else {
-            throw new IllegalArgumentException(s + "can not be converted to Scala Lifecycle Value!");
+        switch (s) {
+            case "SUITE":
+                return Lifespan.SUITE();
+            case "EXPERIMENT":
+                return Lifespan.EXPERIMENT();
+            case "EXPERIMENT_RUN":
+                return Lifespan.EXPERIMENT_RUN();
+            default:
+                throw new IllegalArgumentException(s + " can not be converted to Scala Lifecycle Value!");
         }
     }
 

@@ -17,8 +17,9 @@
     <bean id="mc" class="com.samskivert.mustache.Mustache" factory-method="compiler">
     </bean>
 
-
     <bean id="system" abstract="true">
         <constructor-arg name="mc" ref="mc"/>
     </bean>
+
+    <bean id="config.string" class="com.typesafe.config.ConfigFactory" factory-method="parseString" abstract="true"/>
 </beans>

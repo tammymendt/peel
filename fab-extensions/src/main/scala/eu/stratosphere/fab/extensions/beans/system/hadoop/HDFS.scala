@@ -19,56 +19,56 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
 
   override def setUp(): Unit = {
     logger.info(s"Starting system '$toString'")
-
-    if (config.get.hasPath("system.hadoop.paths.archive")) {
-      if (!Files.exists(Paths.get(config.get.getString("system.hadoop.paths.home")))) {
-        logger.info(s"Extracting archive ${config.get.getString("system.hadoop.paths.archive.src")} to ${config.get.getString("system.hadoop.paths.archive.dst")}")
-        Shell.untar(config.get.getString("system.hadoop.paths.archive.src"), config.get.getString("system.hadoop.paths.archive.dst"))
-
-        logger.info(s"Changing owner of ${config.get.getString("system.hadoop.paths.home")} to ${config.get.getString("system.hadoop.user")}:${config.get.getString("system.hadoop.group")}")
-        Shell.execute("chown -R %s:%s %s".format(
-          config.get.getString("system.hadoop.user"),
-          config.get.getString("system.hadoop.group"),
-          config.get.getString("system.hadoop.paths.home")))
-      }
-    }
-
-    logger.info(s"Checking system configuration")
-    configuration().update()
-
-    if (config.get.getBoolean("system.hadoop.format")) format()
-
-    Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
-    logger.info(s"Waiting for safemode to exit")
-    while (inSafemode) Thread.sleep(1000)
-    logger.info(s"System '$toString' is now running")
+//
+//    if (config.get.hasPath("system.hadoop.paths.archive")) {
+//      if (!Files.exists(Paths.get(config.get.getString("system.hadoop.paths.home")))) {
+//        logger.info(s"Extracting archive ${config.get.getString("system.hadoop.paths.archive.src")} to ${config.get.getString("system.hadoop.paths.archive.dst")}")
+//        Shell.untar(config.get.getString("system.hadoop.paths.archive.src"), config.get.getString("system.hadoop.paths.archive.dst"))
+//
+//        logger.info(s"Changing owner of ${config.get.getString("system.hadoop.paths.home")} to ${config.get.getString("system.hadoop.user")}:${config.get.getString("system.hadoop.group")}")
+//        Shell.execute("chown -R %s:%s %s".format(
+//          config.get.getString("system.hadoop.user"),
+//          config.get.getString("system.hadoop.group"),
+//          config.get.getString("system.hadoop.paths.home")))
+//      }
+//    }
+//
+//    logger.info(s"Checking system configuration")
+//    configuration().update()
+//
+//    if (config.get.getBoolean("system.hadoop.format")) format()
+//
+//    Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
+//    logger.info(s"Waiting for safemode to exit")
+//    while (inSafemode) Thread.sleep(1000)
+//    logger.info(s"System '$toString' is now running")
   }
 
   override def tearDown(): Unit = {
     logger.info(s"Tearing down '$toString'")
-    Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
-
-    if (config.get.getBoolean("system.hadoop.format")) format()
+//    Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
+//
+//    if (config.get.getBoolean("system.hadoop.format")) format()
   }
 
   override def update(): Unit = {
     logger.info(s"Checking system configuration")
-    val c = configuration()
-    if (c.hasChanged()) {
-      logger.info(s"Configuration changed, restarting '$toString'...")
-      Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
-
-      if (config.get.getBoolean("system.hadoop.format")) format()
-
-      c.update()
-
-      if (config.get.getBoolean("system.hadoop.format")) format()
-
-      Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
-      logger.info(s"Waiting for safemode to exit")
-      while (inSafemode) Thread.sleep(1000)
-      logger.info(s"System '$toString' is now running")
-    }
+//    val c = configuration()
+//    if (c.hasChanged()) {
+//      logger.info(s"Configuration changed, restarting '$toString'...")
+//      Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
+//
+//      if (config.get.getBoolean("system.hadoop.format")) format()
+//
+//      c.update()
+//
+//      if (config.get.getBoolean("system.hadoop.format")) format()
+//
+//      Shell.execute(s"${config.get.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
+//      logger.info(s"Waiting for safemode to exit")
+//      while (inSafemode) Thread.sleep(1000)
+//      logger.info(s"System '$toString' is now running")
+//    }
   }
 
   override def configuration() = SystemConfig(config.get, List(
