@@ -12,14 +12,12 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
 
   def run() = {
 
+    logger.info("Constructing dependency graph for suite")
     val graph = createGraph()
 
     //TODO check for cycles in the graph
     if (graph.isEmpty)
       throw new RuntimeException("Suite is empty!")
-
-    logger.info("Constructed dependency graph for suite.")
-    //logger.info(ctx.depGraph.toString)
 
     val ctx = ExecutionContext(graph, loadConfig(graph))
 
@@ -29,11 +27,16 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
     }
 
     try {
+      logger.info("Setting up systems with SUITE lifecycle")
       setUp(ctx)
+      logger.info("Executing experiments in suite")
+      Thread.sleep(20000)
       //      for (exp <- experiments) exp.run(ctx)
     } catch {
-      case e: Exception => logger.error(s"Exception in ExperimentSuite: ${e.getMessage}")
+      case e: Exception => logger.error(s"Exception of type ${e.getClass} in ExperimentSuite: ${e.getMessage}")
+      case _: Throwable => logger.error(s"Exception in ExperimentSuite")
     } finally {
+      logger.info("Tearing down systems with SUITE lifecycle")
       tearDown(ctx)
     }
   }

@@ -41,7 +41,7 @@
         <config.version>1.2.1</config.version>
 
         <!-- Templating -->
-        <mustache.version>0.8.15</mustache.version>
+        <jmustache.version>1.9</jmustache.version>
 
     </properties>
 
@@ -106,9 +106,9 @@
 
             <!-- Templating -->
             <dependency>
-                <groupId>com.github.spullara.mustache.java</groupId>
-                <artifactId>compiler</artifactId>
-                <version>${mustache.version}</version>
+                <groupId>com.samskivert</groupId>
+                <artifactId>jmustache</artifactId>
+                <version>${jmustache.version}</version>
             </dependency>
 
             <!-- Logging -->
