@@ -7,7 +7,8 @@
     <bean id="conversionService" class="org.springframework.context.support.ConversionServiceFactoryBean">
         <property name="converters">
             <set>
-                <bean class="eu.stratosphere.fab.core.beans.StringToScalaEnum"/>
+                <bean class="eu.stratosphere.fab.core.beans.StringToConfig"/>
+                <bean class="eu.stratosphere.fab.core.beans.StringToLifespan"/>
                 <bean class="eu.stratosphere.fab.core.beans.JavaListToScalaList"/>
                 <bean class="eu.stratosphere.fab.core.beans.JavaSetToScalaSet"/>
             </set>
@@ -20,6 +21,4 @@
     <bean id="system" abstract="true">
         <constructor-arg name="mc" ref="mc"/>
     </bean>
-
-    <bean id="config.string" class="com.typesafe.config.ConfigFactory" factory-method="parseString" abstract="true"/>
 </beans>

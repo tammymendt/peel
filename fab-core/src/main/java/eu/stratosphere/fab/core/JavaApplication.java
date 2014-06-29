@@ -15,7 +15,7 @@ public class JavaApplication {
 
         String experimentsConfigPath = args.length >= 1 ? args[0] : "fab-experiments.xml";
 
-        logger.info(String.format("Running experiments under %s", experimentsConfigPath));
+        logger.info(String.format("Running experiments from %s", experimentsConfigPath));
         AbstractApplicationContext context = new ClassPathXmlApplicationContext("fab-core.xml", "fab-extensions.xml", experimentsConfigPath);
         context.registerShutdownHook();
 

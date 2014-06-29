@@ -7,28 +7,42 @@ class DependencyGraph[T] {
 
   var graph: HashMap[T, Set[T]] = new HashMap[T, Set[T]]()
 
+  /**
+   * @return True if the graph is empty (i.e. has no nodes).
+   */
   def isEmpty: Boolean = graph.isEmpty
 
+  /**
+   * @return The number of nodes in the graph
+   */
   def size: Int = graph.size
 
-  // all vertices as a set
+  /**
+   * @return All vertices as a set.
+   */
   def vertices: Set[T] = graph.keySet.toSet
 
-  // all edges as a set
-  def edges: Set[T] = graph.values.flatten.toSet
+  /**
+   * @return All edge targets as a set.
+   */
+  def edgeTargets: Set[T] = graph.values.flatten.toSet
 
   /**
-   * adds a vertex
-   * if vertex already exists, returns the value associated with it
-   * else: add vertex with emoty set as value and return empty
+   * Adds a vertex to the graph.
+   *
+   * If vertex already exists, returns the value associated with it, otherwise adds a vertex with emoty set as value
+   * and returns empty.
+   *
    * @param key vertex to insert
    * @return this vertex-key
    */
   def addVertex(key: T): Set[T] = graph.getOrElseUpdate(key, Set())
 
   /**
-   * adds an edge from src to target
-   * if one or both of the vertices do not exist yet, they are created
+   * Adds an edge from src to target.
+   *
+   * If one or both of the vertices do not exist yet, they are created.
+   *
    * @param src source vertex
    * @param target target vertex
    */
@@ -42,15 +56,17 @@ class DependencyGraph[T] {
   }
 
   /**
-   * adds edges defined in a list
-   * @param edges list of edges to be added to the graph
+   * Adds edges defined in a list.
+   *
+   * @param edges A list of edges to be added to the graph.
    */
   def addEdge(edges: List[Tuple2[T, T]]): Unit = {
     for ((s, t) <- edges) yield addEdge(s, t)
   }
 
   /**
-   * tests if this vertex has any edge
+   * Tests if this vertex has any edge.
+   *
    * @param src the vertex to check for an edge
    * @return true if vertex has edge, false otherwise
    */
@@ -62,7 +78,8 @@ class DependencyGraph[T] {
   }
 
   /**
-   * checks if the graph has an edge between two vertices
+   * Checks if the graph has an edge between two vertices
+   *
    * @param src the source vertex
    * @param target he target vertex
    * @return true if an edge between src and target exists, false otherwise
@@ -75,68 +92,48 @@ class DependencyGraph[T] {
   }
 
   /**
-   * determine if the graph has a cycle
-   * @return true if graph has a cycle, false otherwise
+   * Determine if the graph has a cycle
+   *
+   * @return True if graph has a cycle, false otherwise
    */
   def hasCycle: Boolean = ???
 
   /**
-   * topological sort of the directed graph
-   * @return sorted Graph (List of names of the nodes)
+   * Topological sort of the directed graph
+   *
+   * @return Topologically Sorted Graph (List of names of the nodes)
    */
-  def topoSort: List[T] = ???
+  def topologicalSort: List[T] = ???
 
   /**
-   * Depth-First-Search on the Graph
-   * If no start vertex is given, all vertices with in-degree
-   * zero are selected as start vertices. If a start vertex is given,
-   * all vertices that have in-degree zero are added additionally.
-   * @param start optional start vertex.
+   * Depth-first traversal on the graph.
+   *
+   * If no start vertex is given, all vertices with in-degree zero are selected as start vertices.
+   * If a start vertex is given, all vertices that have in-degree zero are added additionally.
+   *
+   * @param start Optional start vertex.
    * @return List of a possible depth first search sequence
    */
-  def dfs(start: Set[T] = vertices diff edges): List[T] = {
+  def traverse(start: Set[T] = vertices diff edgeTargets): List[T] = {
 
-    @tailrec
-    def loop(toVisit: Set[T], visited: List[T]): List[T] = {
-      if (toVisit.isEmpty) visited
-      else {
-        val next: T = toVisit.head
-        val children: Set[T] = graph(next) filter (x => !visited.contains(x))
-
-        loop(children ++ toVisit.tail, next :: visited)
-      }
-    }
-
-    if (start != (vertices diff edges))
-      loop(start ++ (vertices diff edges), List()).reverse
+    if (start != (vertices diff edgeTargets))
+      collect(start ++ (vertices diff edgeTargets), List()).reverse
     else
-      loop(start, List()).reverse
+      collect(start, List()).reverse
   }
 
   /**
-   * Deth first search that starts at one node and gets all dependencies
-   * Does NOT traverse all nodes but only the ones reachable from the start node!
+   * Depth-first list of all node descendants.
+   *
    * @param start node to start with
    * @return sequence of dependencies of that node
    */
-  def directDependencies(start: T): List[T] = {
-    @tailrec
-    def loop(toVisit: Set[T], visited: List[T]): List[T] = {
-      if (toVisit.isEmpty) visited
-      else {
-        val next: T = toVisit.head
-        val children: Set[T] = graph(next) filter (x => !visited.contains(x))
-
-        loop(children ++ toVisit.tail, next :: visited)
-      }
-    }
-
-    loop(Set(start), List()).reverse
-  }
+  def descendants(start: T): List[T] = collect(Set(start), List()).reverse
 
   /**
-   * reverses the Graph
-   * @return new Graph with reversed edges
+   * Reverses the graph.
+   *
+   * @return A new Graph with the same set of vertices and reversed edges.
    */
   def reverse: DependencyGraph[T] = {
     if (!isEmpty) {
@@ -148,6 +145,24 @@ class DependencyGraph[T] {
       newGraph
     } else
       throw new Exception("Cannot reverse empty Graph!")
+  }
+
+  /**
+   * Collects descendants in a depth-first manner starting from the given set.
+   *
+   * @param toVisit
+   * @param visited
+   * @return
+   */
+  @tailrec
+  private def collect(toVisit: Set[T], visited: List[T]): List[T] = {
+    if (toVisit.isEmpty) visited
+    else {
+      val next: T = toVisit.head
+      val children: Set[T] = graph(next) filter (x => !visited.contains(x))
+
+      collect(children ++ toVisit.tail, next :: visited)
+    }
   }
 
   override def toString: String = {

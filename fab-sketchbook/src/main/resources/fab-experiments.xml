@@ -4,15 +4,12 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="experiment.stratosphere" class="eu.stratosphere.fab.core.beans.experiment.Experiment" abstract="true">
+        <constructor-arg name="runs" value="6"/>
         <constructor-arg name="runner" ref="stratosphere.hdfs"/>
     </bean>
     <bean id="experiment.stratosphere.wc" parent="experiment.stratosphere" abstract="true">
-        <constructor-arg name="arguments">
-            <list>
-                <value>${system.hadoop.paths.home}/examples/stratosphere-java-examples-0.5.1-WordCount.jar</value>
-                <value>${system.hadoop.paths.input}/tmp/input.txt</value>
-                <value>${system.hadoop.paths.output}/tmp/output.txt</value>
-            </list>
+        <constructor-arg name="command">
+            <value>${system.hadoop.paths.home}/examples/stratosphere-java-examples-0.5.1-WordCount.jar ${system.hadoop.paths.input}/tmp/input.txt ${system.hadoop.paths.output}/tmp/output.txt</value>
         </constructor-arg>
     </bean>
 
@@ -21,29 +18,34 @@
             <list>
                 <bean parent="experiment.stratosphere.wc">
                     <constructor-arg name="config">
-                        <bean parent="config.string">
-                            <constructor-arg>
-                                <value>system.default.config.slaves = [ "cloud-12", "cloud-13" ]</value>
-                            </constructor-arg>
-                        </bean>
+                        <value>
+                            experiment.name.base = wc.dop02
+                            system.default.config.slaves = [ "cloud-7" ]
+                        </value>
                     </constructor-arg>
                 </bean>
                 <bean parent="experiment.stratosphere.wc">
                     <constructor-arg name="config">
-                        <bean parent="config.string">
-                            <constructor-arg>
-                                <value>system.default.config.slaves = [ "cloud-12", "cloud-13", "cloud-14", "cloud-15" ]</value>
-                            </constructor-arg>
-                        </bean>
+                        <value>
+                            experiment.name.base = wc.dop04
+                            system.default.config.slaves = [ "cloud-7", "cloud-8" ]
+                        </value>
                     </constructor-arg>
                 </bean>
                 <bean parent="experiment.stratosphere.wc">
                     <constructor-arg name="config">
-                        <bean parent="config.string">
-                            <constructor-arg>
-                                <value>system.default.config.slaves = [ "cloud-12", "cloud-13", "cloud-14", "cloud-15", "cloud-16", "cloud-17", "cloud-18", "cloud-19" ]</value>
-                            </constructor-arg>
-                        </bean>
+                        <value>
+                            experiment.name.base = wc.dop04
+                            system.default.config.slaves = [ "cloud-7", "cloud-8", "cloud-9" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop08
+                            system.default.config.slaves = [ "cloud-7", "cloud-8", "cloud-9", "cloud-10" ]
+                        </value>
                     </constructor-arg>
                 </bean>
             </list>

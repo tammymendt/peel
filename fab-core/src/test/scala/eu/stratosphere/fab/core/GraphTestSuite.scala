@@ -52,26 +52,26 @@ class GraphTestSuite extends FunSuite with Matchers {
     val l1 = List("A", "B", "C", "D", "E")
     val l2 = List("D", "E", "C", "A", "B")
 
-    List(l1, l2) should contain (i.dfs())
+    List(l1, l2) should contain (i.traverse())
   }
 
   test("dfs on reversed graph with no start vertex given") {
     val l1 = List("C", "B", "A", "E", "D")
     val l2 = List("C", "E", "D", "B", "A")
 
-    List(l1, l2) should contain (i.reverse.dfs())
+    List(l1, l2) should contain (i.reverse.traverse())
   }
 
   test("dfs with vertex A as start vertex") {
     val l1 = List("A", "B", "C", "D", "E")
 
-    assert(i.dfs(Set("A")) == l1)
+    assert(i.traverse(Set("A")) == l1)
   }
 
   test("dfs with vertex D as start vertex") {
     val l1 = List("D", "E", "C", "A", "B")
 
-    assert(i.dfs(Set("D")) == l1)
+    assert(i.traverse(Set("D")) == l1)
   }
 
   test("should not detect cycle when thre is no cycle") {
@@ -84,18 +84,18 @@ class GraphTestSuite extends FunSuite with Matchers {
   }
 
   test("find direct dependencies of A") {
-    assert(i.directDependencies("A") == List("A", "B", "C"))
+    assert(i.descendants("A") == List("A", "B", "C"))
   }
 
   test("find direct dependencies of D") {
-    assert(i.directDependencies("D") == List("D", "E", "C"))
+    assert(i.descendants("D") == List("D", "E", "C"))
   }
 
   test("find direct dependencies of C in reversed graph") {
     val l1 = List("C", "B", "A", "E", "D")
     val l2 = List("C", "E", "D", "B", "A")
 
-    List(l1, l2) should contain (i.reverse.directDependencies("C"))
+    List(l1, l2) should contain (i.reverse.descendants("C"))
   }
 
 

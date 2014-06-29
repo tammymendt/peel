@@ -1,21 +1,16 @@
 package eu.stratosphere.fab.core.beans.experiment
 
-import java.io.File
-
 import com.typesafe.config.Config
-import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, FileSystem, Lifespan, System}
-import eu.stratosphere.fab.core.context.ExecutionContext
+import eu.stratosphere.fab.core.beans.system.ExperimentRunner
 import eu.stratosphere.fab.core.graph.Node
 import org.slf4j.LoggerFactory
 
-import scala.collection.JavaConverters._
-
-class Experiment(val runner: ExperimentRunner, val config: Config, val arguments: List[String] = List()) extends Node {
+class Experiment(val runs: Int, val runner: ExperimentRunner, val command: String, var config: Config) extends Node {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
 
-  def run(ctx: ExecutionContext) = {
-//    logger.info("Starting experiment sequence with %d element(s)...".format(sequence.length))
+  def run() = {
+    logger.info("Running experiment %s".format(config.getString("experiment.name.run")))
 //
 //    for (num <- 0 to sequence.length - 1) {
 //      logger.info("Starting element %d/%d with %d repetitions...".format(num + 1, sequence.length, sequence(num).toInt))
@@ -49,7 +44,7 @@ class Experiment(val runner: ExperimentRunner, val config: Config, val arguments
   }
 
 //
-//  private def setUp(ctx: ExecutionContext) = {
+//  def setUp(ctx: ExecutionContext) = {
 //    for (d <- ctx.depGraph.reverse.directDependencies(runner)) {
 //      d match {
 //        case s: System => if (s.lifespan == Lifespan.EXPERIMENT) s.setUp(ctx)
@@ -58,7 +53,7 @@ class Experiment(val runner: ExperimentRunner, val config: Config, val arguments
 //    }
 //  }
 //
-//  private def tearDown(ctx: ExecutionContext) = {
+//  def tearDown(ctx: ExecutionContext) = {
 //    for (d <- ctx.depGraph.directDependencies(runner)) {
 //      d match {
 //        case d: System => if (d.lifespan == Lifespan.EXPERIMENT) d.tearDown(ctx)

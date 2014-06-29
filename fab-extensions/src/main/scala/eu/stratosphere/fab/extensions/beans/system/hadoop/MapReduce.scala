@@ -26,5 +26,5 @@ class MapReduce(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Musta
 //    Shell.execute(home + "bin/hadoop jar %s %s %s".format(job, input.mkString(" "), output), true)
   }
 
-  override def configuration() = SystemConfig(config.get, Nil)
+  override def configuration() = SystemConfig(config, Nil)
 }

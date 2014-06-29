@@ -1,9 +1,9 @@
 package eu.stratosphere.fab.core.beans.experiment
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config._
+import com.typesafe.config.impl.Parseable
 import eu.stratosphere.fab.core.beans.system.{Lifespan, System}
-import eu.stratosphere.fab.core.context.ExecutionContext
-import eu.stratosphere.fab.core.graph.{Node, DependencyGraph}
+import eu.stratosphere.fab.core.graph.{DependencyGraph, Node}
 import org.slf4j.LoggerFactory
 
 class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
@@ -11,7 +11,6 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
   final val logger = LoggerFactory.getLogger(this.getClass)
 
   def run() = {
-
     logger.info("Constructing dependency graph for suite")
     val graph = createGraph()
 
@@ -19,64 +18,102 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
     if (graph.isEmpty)
       throw new RuntimeException("Suite is empty!")
 
-    val ctx = ExecutionContext(graph, loadConfig(graph))
+    // SUITE lifespan
+    try {
+      val baseConfig = loadConfig(graph)
 
-    for (n <- ctx.graph.reverse.dfs()) n match {
-      case s: System => s.config = Some(ctx.config)
-      case _ => Unit
+      // update config
+      for (n <- graph.vertices) n match {
+        case s: System => s.config = baseConfig
+        case e: Experiment => e.config = e.config.withFallback(baseConfig)
+        case _ => Unit
+      }
+
+      logger.info("Setting up systems with SUITE lifespan")
+      for (n <- graph.reverse.traverse()) n match {
+        case s: System => if (s.lifespan == Lifespan.SUITE) s.setUp()
+        case _ => Unit
+      }
+
+      logger.info("Executing experiments in suite")
+      for (e <- experiments) {
+        // EXPERIMENT lifespan
+        try {
+          logger.info("#" * 60)
+          logger.info("Current experiment is %s".format(e.config.getString("experiment.name.base")))
+
+          // update config
+          val expConfig = loadConfig(graph, Some(e))
+          for (n <- graph.descendants(e).reverse) n match {
+            case s: System => s.config = e.config
+            case _ => Unit
+          }
+
+          logger.info("Updating systems with SUITE lifespan")
+          for (n <- graph.reverse.traverse()) n match {
+            case s: System => if (s.lifespan == Lifespan.SUITE) s.update()
+            case _ => Unit
+          }
+
+          for (r <- 1 to e.runs) {
+            e.config = expConfig
+              .withValue("experiment.run", ConfigValueFactory.fromAnyRef(r))
+              .withValue("experiment.name.run", ConfigValueFactory.fromAnyRef("%s-run%02d".format(expConfig.getString("experiment.name.base"), r))) // update config
+            e.run() // run experiment
+            e.config = expConfig // restore original config
+          }
+
+        } catch {
+          case e: Exception => logger.error(s"Exception of type ${e.getClass} in ExperimentSuite: ${e.getMessage}")
+          case _: Throwable => logger.error(s"Exception in ExperimentSuite")
+        }
+      }
+
     }
 
-    try {
-      logger.info("Setting up systems with SUITE lifecycle")
-      setUp(ctx)
-      logger.info("Executing experiments in suite")
-      Thread.sleep(20000)
-      //      for (exp <- experiments) exp.run(ctx)
-    } catch {
+    catch {
       case e: Exception => logger.error(s"Exception of type ${e.getClass} in ExperimentSuite: ${e.getMessage}")
       case _: Throwable => logger.error(s"Exception in ExperimentSuite")
+
     } finally {
-      logger.info("Tearing down systems with SUITE lifecycle")
-      tearDown(ctx)
+      logger.info("#" * 60)
+      logger.info("Tearing down systems with SUITE lifespan")
+      for (n <- graph.traverse()) n match {
+        case s: System => if (s.lifespan == Lifespan.SUITE) s.tearDown()
+        case _ => Unit
+      }
     }
   }
 
-  private def loadConfig(graph: DependencyGraph[Node]) = {
-    var config = ConfigFactory.load()
-    for (n <- graph.reverse.dfs()) n match {
+  private def loadConfig(graph: DependencyGraph[Node], exp: Option[Experiment] = None, run: Option[Integer] = None) = {
+    // helpers
+    val options = ConfigParseOptions.defaults().setClassLoader(this.getClass.getClassLoader)
+    def loadResource(resource: String): Config = Parseable.newResources(s"$resource.conf", options).parse(options).toConfig
+
+    // load reference configuration
+    var config = loadResource("reference")
+
+    // load systems configuration
+    for (n <- graph.reverse.traverse().reverse) n match {
       case s: System =>
-        config = ConfigFactory.load(s.name).withFallback(
-          if (s.name != s.defaultName)
-            ConfigFactory.load(s.defaultName).withFallback(config)
-          else
-            config)
+        // load {system.defaultName}.conf
+        config = loadResource(s.defaultName.toLowerCase).withFallback(config)
+        // load {system.name}.conf
+        if (s.name.toLowerCase != s.defaultName.toLowerCase) config = loadResource(s.name.toLowerCase).withFallback(config)
       case _ => Unit
     }
-    config
-  }
 
-  /**
-   * Set up all systems with SUITE lifespan.
-   *
-   * @param ctx The execution context.
-   */
-  private def setUp(ctx: ExecutionContext) = {
-    for (n <- ctx.graph.reverse.dfs()) n match {
-      case s: System => if (s.lifespan == Lifespan.SUITE) s.setUp()
-      case _ => Unit
-    }
-  }
+    // load application configuration
+    config = loadResource("application").withFallback(config)
 
-  /**
-   * Tear down all dependencies with SUITE lifespan.
-   *
-   * @param ctx The execution context.
-   */
-  private def tearDown(ctx: ExecutionContext) = {
-    for (n <- ctx.graph.reverse.dfs().reverse) n match {
-      case s: System => if (s.lifespan == Lifespan.SUITE) s.tearDown()
-      case _ => Unit
-    }
+    // load the experiment config
+    if (exp.isDefined) config = exp.get.config.withFallback(config)
+
+    // load system properties
+    config = ConfigFactory.systemProperties.withFallback(config)
+
+    // resolve and return config
+    config.resolve()
   }
 
   /**

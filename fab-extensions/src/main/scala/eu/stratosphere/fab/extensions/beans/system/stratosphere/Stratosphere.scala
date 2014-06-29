@@ -18,12 +18,12 @@ class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mu
   }
 
   override def update(): Unit = {
-    logger.info(s"Updating '$toString'")
+    logger.info(s"Checking system configuration of '$toString'")
   }
 
   override def run(job: String, input: List[File], output: File) = {
     logger.info("Running Stratosphere job")
   }
 
-  override def configuration() = SystemConfig(config.get, Nil)
+  override def configuration() = SystemConfig(config, Nil)
 }

@@ -1,7 +1,7 @@
 package eu.stratosphere.fab.core.beans.system
 
 import com.samskivert.mustache.Mustache
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigFactory, Config}
 import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
 import eu.stratosphere.fab.core.config.SystemConfig
 import eu.stratosphere.fab.core.graph.Node
@@ -25,7 +25,7 @@ abstract class System(val defaultName: String,
   /**
    * The current Config instance associated with this system.
    */
-  var config: Option[Config] = None
+  var config = ConfigFactory.empty()
 
   /**
    * Creates a complete system installation with updated configuration and starts the system.
