@@ -16,8 +16,8 @@ class Experiment(val runs: Int, val runner: ExperimentRunner, val command: Strin
 //      logger.info("Starting element %d/%d with %d repetitions...".format(num + 1, sequence.length, sequence(num).toInt))
 //
 //      val job: String = arguments(1)
-//      val output = new File(config.getString("paths.hadoop.v1.output"), "output.txt")
-//      val results = config.getString("paths.hadoop.v1.results")
+//      val output = new File(config.getString("path.hadoop.v1.output"), "output.txt")
+//      val results = config.getString("path.hadoop.v1.results")
 //
 //      val fs: List[FileSystem] = getFileSystems(ctx)
 //      def copyInput: List[File] = fs map { x: FileSystem => x.setInput(new File(arguments(2)))}

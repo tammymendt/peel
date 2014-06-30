@@ -1,17 +1,22 @@
 package eu.stratosphere.fab.core.beans.experiment
 
+import java.io.File
+
 import com.typesafe.config._
-import com.typesafe.config.impl.Parseable
 import eu.stratosphere.fab.core.beans.system.{Lifespan, System}
 import eu.stratosphere.fab.core.graph.{DependencyGraph, Node}
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.BeanNameAware
 
-class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
+class ExperimentSuite(final val experiments: List[Experiment]) extends Node with BeanNameAware {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
 
+  var name = "experiments"
+
   def run() = {
-    logger.info("Constructing dependency graph for suite")
+    logger.info(s"Running experiments suite '${name}'")
+    logger.info(s"Constructing dependency graph for suite")
     val graph = createGraph()
 
     //TODO check for cycles in the graph
@@ -25,7 +30,6 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
       // update config
       for (n <- graph.vertices) n match {
         case s: System => s.config = baseConfig
-        case e: Experiment => e.config = e.config.withFallback(baseConfig)
         case _ => Unit
       }
 
@@ -45,7 +49,7 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
           // update config
           val expConfig = loadConfig(graph, Some(e))
           for (n <- graph.descendants(e).reverse) n match {
-            case s: System => s.config = e.config
+            case s: System => s.config = expConfig
             case _ => Unit
           }
 
@@ -54,6 +58,14 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
             case s: System => if (s.lifespan == Lifespan.SUITE) s.update()
             case _ => Unit
           }
+
+          logger.info("Setting up systems with EXPERIMENT lifespan")
+          for (n <- graph.reverse.traverse(); if graph.descendants(e).contains(n)) n match {
+            case s: System => if (s.lifespan == Lifespan.EXPERIMENT) s.setUp()
+            case _ => Unit
+          }
+
+          logger.info("Slaves: " + expConfig.getString("system.hadoop.config.mapred.mapred.job.tracker"))
 
           for (r <- 1 to e.runs) {
             e.config = expConfig
@@ -66,6 +78,13 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
         } catch {
           case e: Exception => logger.error(s"Exception of type ${e.getClass} in ExperimentSuite: ${e.getMessage}")
           case _: Throwable => logger.error(s"Exception in ExperimentSuite")
+
+        } finally {
+          logger.info("Tearing down systems with EXPERIMENT lifespan")
+          for (n <- graph.traverse(); if graph.descendants(e).contains(n)) n match {
+            case s: System => if (s.lifespan == Lifespan.EXPERIMENT) s.tearDown()
+            case _ => Unit
+          }
         }
       }
 
@@ -88,26 +107,27 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
   private def loadConfig(graph: DependencyGraph[Node], exp: Option[Experiment] = None, run: Option[Integer] = None) = {
     // helpers
     val options = ConfigParseOptions.defaults().setClassLoader(this.getClass.getClassLoader)
-    def loadResource(resource: String): Config = Parseable.newResources(s"$resource.conf", options).parse(options).toConfig
 
     // load reference configuration
-    var config = loadResource("reference")
+    var config = ConfigFactory.parseResources("reference.conf", options)
 
     // load systems configuration
     for (n <- graph.reverse.traverse().reverse) n match {
       case s: System =>
         // load {system.defaultName}.conf
-        config = loadResource(s.defaultName.toLowerCase).withFallback(config)
+        config = ConfigFactory.parseResources(s"${s.defaultName.toLowerCase}.conf", options).withFallback(config)
         // load {system.name}.conf
-        if (s.name.toLowerCase != s.defaultName.toLowerCase) config = loadResource(s.name.toLowerCase).withFallback(config)
+        if (s.name.toLowerCase != s.defaultName.toLowerCase)
+          config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.defaultName.toLowerCase}.conf"), options).withFallback(config)
       case _ => Unit
     }
 
     // load application configuration
-    config = loadResource("application").withFallback(config)
+    config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/application.conf"), options).withFallback(config)
 
     // load the experiment config
-    if (exp.isDefined) config = exp.get.config.withFallback(config)
+    if (exp.isDefined) config =
+      exp.get.config.withFallback(config)
 
     // load system properties
     config = ConfigFactory.systemProperties.withFallback(config)
@@ -144,4 +164,6 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node {
   }
 
   override def toString = "Experiment Suite"
+
+  override def setBeanName(n: String): Unit = name = n
 }

@@ -43,6 +43,8 @@
         <!-- Templating -->
         <jmustache.version>1.9</jmustache.version>
 
+        <!-- Arguments parsing -->
+        <argparse4j.version>0.4.3</argparse4j.version>
     </properties>
 
 
@@ -109,6 +111,13 @@
                 <groupId>com.samskivert</groupId>
                 <artifactId>jmustache</artifactId>
                 <version>${jmustache.version}</version>
+            </dependency>
+
+            <!-- Arguments parsing -->
+            <dependency>
+                <groupId>net.sourceforge.argparse4j</groupId>
+                <artifactId>argparse4j</artifactId>
+                <version>${argparse4j.version}</version>
             </dependency>
 
             <!-- Logging -->
@@ -256,9 +265,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
-
         </plugins>
     </build>
 

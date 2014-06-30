@@ -1,12 +1,11 @@
 package eu.stratosphere.fab.sketchbook;
 
-import eu.stratosphere.fab.core.JavaApplication;
-import eu.stratosphere.fab.core.beans.experiment.ExperimentSuite;
-import eu.stratosphere.fab.extensions.beans.system.hadoop.HDFS;
+import com.typesafe.config.*;
+import eu.stratosphere.fab.core.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import com.typesafe.config.impl.Parseable;
 
 public class JavaTest {
 
@@ -14,14 +13,22 @@ public class JavaTest {
 
     public static void main(String... args) throws Exception {
 
-        JavaApplication.main(args);
+//        ConfigParseOptions options = ConfigParseOptions.defaults().setClassLoader(JavaTest.class.getClassLoader());
+//        Config c = load("reference.conf", options);
+//        c = load("hdfs.conf", options).withFallback(c);
+//        c = load("stratosphere.conf", options).withFallback(c);
+//        c = load("mapred.conf", options).withFallback(c);
+//        c = load("application.conf", options).withFallback(c);
+//        c = ConfigFactory.parseString("system.default.config.slaves = [ alexander-t540 ]").withFallback(c);
+//        c = ConfigFactory.systemProperties().withFallback(c);
+//        c = c.resolve();
+//        System.out.println(c.getStringList("system.hadoop.config.slaves").get(0));
+        Application.main(args);
+    }
 
-//        String experimentsConfigPath = args.length >= 1 ? args[0] : "fab-experiments.xml";
-//
-//        logger.info("FAB Application");
-//        AbstractApplicationContext context = new ClassPathXmlApplicationContext("fab-core.xml", "fab-extensions.xml", experimentsConfigPath);
-//        context.registerShutdownHook();
-//
-//        HDFS hdfs = context.getBean("hdfs", HDFS.class);
+    private static Config load(String resourceName, ConfigParseOptions options) {
+        ConfigParseable p = Parseable.newResources(resourceName, options);
+        ConfigObject o = p.parse(options);
+        return o.toConfig();
     }
 }

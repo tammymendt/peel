@@ -20,36 +20,36 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
   override def setUp(): Unit = {
     logger.info(s"Starting system '$toString'")
 
-    if (config.hasPath("system.hadoop.paths.archive")) {
-      if (!Files.exists(Paths.get(config.getString("system.hadoop.paths.home")))) {
-        logger.info(s"Extracting archive ${config.getString("system.hadoop.paths.archive.src")} to ${config.getString("system.hadoop.paths.archive.dst")}")
-        Shell.untar(config.getString("system.hadoop.paths.archive.src"), config.getString("system.hadoop.paths.archive.dst"))
+    if (config.hasPath("system.hadoop.path.archive")) {
+      if (!Files.exists(Paths.get(config.getString("system.hadoop.path.home")))) {
+        logger.info(s"Extracting archive ${config.getString("system.hadoop.path.archive.src")} to ${config.getString("system.hadoop.path.archive.dst")}")
+        Shell.untar(config.getString("system.hadoop.path.archive.src"), config.getString("system.hadoop.path.archive.dst"))
 
-        logger.info(s"Changing owner of ${config.getString("system.hadoop.paths.home")} to ${config.getString("system.hadoop.user")}:${config.getString("system.hadoop.group")}")
+        logger.info(s"Changing owner of ${config.getString("system.hadoop.path.home")} to ${config.getString("system.hadoop.user")}:${config.getString("system.hadoop.group")}")
         Shell.execute("chown -R %s:%s %s".format(
           config.getString("system.hadoop.user"),
           config.getString("system.hadoop.group"),
-          config.getString("system.hadoop.paths.home")))
+          config.getString("system.hadoop.path.home")))
       }
     }
 
     logger.info(s"Checking system configuration")
     configuration().update()
-
-    if (config.getBoolean("system.hadoop.format")) format()
-
-    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
-    logger.info(s"Waiting for safemode to exit")
-    while (inSafemode) Thread.sleep(1000)
-    logger.info(s"System '$toString' is now running")
+//
+//    if (config.getBoolean("system.hadoop.format")) format()
+//
+//    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
+//    logger.info(s"Waiting for safemode to exit")
+//    while (inSafemode) Thread.sleep(1000)
+//    logger.info(s"System '$toString' is now running")
   }
 
   override def tearDown(): Unit = {
     logger.info(s"Tearing down '$toString'")
 
-    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
-
-    if (config.getBoolean("system.hadoop.format")) format()
+//    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
+//
+//    if (config.getBoolean("system.hadoop.format")) format()
   }
 
   override def update(): Unit = {
@@ -57,37 +57,37 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
 
     val c = configuration()
     if (c.hasChanged) {
-      logger.info(s"Configuration changed, restarting '$toString'...")
-      Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
-
-      if (config.getBoolean("system.hadoop.format")) format()
-
-      c.update()
-
-      if (config.getBoolean("system.hadoop.format")) format()
-
-      Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
-      logger.info(s"Waiting for safemode to exit")
-      while (inSafemode) Thread.sleep(1000)
-      logger.info(s"System '$toString' is now running")
+//      logger.info(s"Configuration changed, restarting '$toString'...")
+//      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
+//
+//      if (config.getBoolean("system.hadoop.format")) format()
+//
+//      c.update()
+//
+//      if (config.getBoolean("system.hadoop.format")) format()
+//
+//      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
+//      logger.info(s"Waiting for safemode to exit")
+//      while (inSafemode) Thread.sleep(1000)
+//      logger.info(s"System '$toString' is now running")
     }
   }
 
   override def configuration() = SystemConfig(config, List(
     SystemConfig.Entry[Model.Hosts]("system.hadoop.config.masters",
-      "%s/masters".format(config.getString("system.hadoop.paths.config")),
+      "%s/masters".format(config.getString("system.hadoop.path.config")),
       "/templates/hadoop/conf/hosts.mustache", mc),
     SystemConfig.Entry[Model.Hosts]("system.hadoop.config.slaves",
-      "%s/slaves".format(config.getString("system.hadoop.paths.config")),
+      "%s/slaves".format(config.getString("system.hadoop.path.config")),
       "/templates/hadoop/conf/hosts.mustache", mc),
     SystemConfig.Entry[Model.Env]("system.hadoop.config.env",
-      "%s/hadoop-env.sh".format(config.getString("system.hadoop.paths.config")),
+      "%s/hadoop-env.sh".format(config.getString("system.hadoop.path.config")),
       "/templates/hadoop/conf/hadoop-env.sh.mustache", mc),
     SystemConfig.Entry[Model.Site]("system.hadoop.config.core",
-      "%s/core-site.xml".format(config.getString("system.hadoop.paths.config")),
+      "%s/core-site.xml".format(config.getString("system.hadoop.path.config")),
       "/templates/hadoop/conf/site.xml.mustache", mc),
     SystemConfig.Entry[Model.Site]("system.hadoop.config.hdfs",
-      "%s/hdfs-site.xml".format(config.getString("system.hadoop.paths.config")),
+      "%s/hdfs-site.xml".format(config.getString("system.hadoop.path.config")),
       "/templates/hadoop/conf/site.xml.mustache", mc)
   ))
 
@@ -102,7 +102,7 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
    * @return path on hdfs
    */
   def setInput(from: File): File = {
-    val to: File = new File("foobar") // new File(config.tring("paths.hadoop.v1.input"), from.getName)
+    val to: File = new File("foobar") // new File(config.tring("path.hadoop.v1.input"), from.getName)
     //    logger.info("Copy Input data from %s to %s...".format(from, to))
     //    Shell.execute(home + "bin/hadoop fs -put %s %s".format(from, to), logOutput = true)
     to
@@ -130,7 +130,7 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
     val nameDir = config.getString("system.hadoop.config.hdfs.dfs.name.dir")
 
     logger.info(s"Formatting namenode")
-    Shell.execute("echo 'Y' | %s/bin/hadoop namenode -format".format(config.getString("system.hadoop.paths.home")))
+    Shell.execute("echo 'Y' | %s/bin/hadoop namenode -format".format(config.getString("system.hadoop.path.home")))
 
     logger.info(s"Fixing data directories")
     for (dataNode <- config.getStringList("system.hadoop.config.slaves").asScala) {
@@ -153,7 +153,7 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
    * @return
    */
   private def inSafemode: Boolean = {
-    val msg = Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/hadoop dfsadmin -safemode get")
+    val msg = Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/hadoop dfsadmin -safemode get")
     val status = msg._1.toLowerCase
     !status.contains("off")
   }
