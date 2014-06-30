@@ -49,6 +49,12 @@
             <artifactId>config</artifactId>
         </dependency>
 
+        <!-- Templating -->
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
+
         <!-- test -->
         <dependency>
             <groupId>org.scalatest</groupId>

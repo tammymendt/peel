@@ -1,73 +1,99 @@
 package eu.stratosphere.fab.extensions.beans.system.hadoop
 
-import eu.stratosphere.fab.core.beans.system.{FileSystem, System}
-import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
-import com.typesafe.config.Config
+import java.io.File
+import java.nio.file.{Files, Paths}
+
 import scala.collection.JavaConverters._
-import java.io.{FileNotFoundException, File}
-import eu.stratosphere.fab.core.beans.Shell
 
+import com.samskivert.mustache.Mustache
+import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
+import eu.stratosphere.fab.core.beans.system.{FileSystem, System}
+import eu.stratosphere.fab.core.config.{Model, SystemConfig}
+import eu.stratosphere.fab.core.util.Shell
 
-class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSystem(lifespan, dependencies) {
+class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.Compiler) extends System("HDFS", lifespan, dependencies, mc) with FileSystem {
 
-  val home: String = config.getString("paths.hadoop.v1.home")
+  // ---------------------------------------------------
+  // System.
+  // ---------------------------------------------------
 
-  /**
-   * setup hdfs
-   *
-   * Creates a complete hdfs installation with configuration
-   * and starts a single node cluster
-   */
-  //TODO: allow for more nodes
-  def setUp(): Unit = {
-    logger.info("Setting up " + toString + "...")
-    val src: String = config.getString("paths.hadoop.v1.source")
-    val target: String = config.getString("paths.hadoop.v1.target")
-    val user: String = config.getString("hdfs.v1.user.name")
-    val group: String = config.getString("hdfs.v1.user.group")
-    if (new File(home).exists) Shell.rmDir(home)
-    Shell.untar(src, target)
-    Shell.execute(("chown -R %s:%s " + home).format(user, group) , true)
-    configure(config)
-    Shell.execute(home + "bin/hadoop namenode -format -force", true)
-    Shell.execute(home + "bin/start-dfs.sh", true)
-    while(inSafemode) Thread.sleep(500)
+  override def setUp(): Unit = {
+    logger.info(s"Starting system '$toString'")
+
+    if (config.hasPath("system.hadoop.paths.archive")) {
+      if (!Files.exists(Paths.get(config.getString("system.hadoop.paths.home")))) {
+        logger.info(s"Extracting archive ${config.getString("system.hadoop.paths.archive.src")} to ${config.getString("system.hadoop.paths.archive.dst")}")
+        Shell.untar(config.getString("system.hadoop.paths.archive.src"), config.getString("system.hadoop.paths.archive.dst"))
+
+        logger.info(s"Changing owner of ${config.getString("system.hadoop.paths.home")} to ${config.getString("system.hadoop.user")}:${config.getString("system.hadoop.group")}")
+        Shell.execute("chown -R %s:%s %s".format(
+          config.getString("system.hadoop.user"),
+          config.getString("system.hadoop.group"),
+          config.getString("system.hadoop.paths.home")))
+      }
+    }
+
+    logger.info(s"Checking system configuration")
+    configuration().update()
+
+    if (config.getBoolean("system.hadoop.format")) format()
+
+    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
+    logger.info(s"Waiting for safemode to exit")
+    while (inSafemode) Thread.sleep(1000)
+    logger.info(s"System '$toString' is now running")
   }
 
-  /**
-   * tear down hdfs
-   *
-   * Shuts down NameNode, Jobtracker and all other Nodes
-   */
-  //TODO remove data folders (input on hdfs, hadoop tmp dir, ...)
-  def tearDown(): Unit = {
-    logger.info("Tearing down " + toString + "...")
-    Shell.execute(home + "bin/stop-dfs.sh", true)
-    Shell.rmDir(home)
+  override def tearDown(): Unit = {
+    logger.info(s"Tearing down '$toString'")
+
+    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
+
+    if (config.getBoolean("system.hadoop.format")) format()
   }
 
-  /**
-   * updates hdfs
-   * the system is shut down and set up again with different parameters
-   *
-   * TODO implement good way to update the parameters
-   *  - give config object as parameter that can be used in setup and configure
-   */
-  def update(): Unit = {
-    logger.info("Updating " + toString + "...")
-    tearDown()
-    setUp()
+  override def update(): Unit = {
+    logger.info(s"Checking system configuration of '$toString'")
+
+    val c = configuration()
+    if (c.hasChanged) {
+      logger.info(s"Configuration changed, restarting '$toString'...")
+      Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
+
+      if (config.getBoolean("system.hadoop.format")) format()
+
+      c.update()
+
+      if (config.getBoolean("system.hadoop.format")) format()
+
+      Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/start-dfs.sh")
+      logger.info(s"Waiting for safemode to exit")
+      while (inSafemode) Thread.sleep(1000)
+      logger.info(s"System '$toString' is now running")
+    }
   }
 
-  /**
-   * checks if hdfs is in safemode
-   * @return
-   */
-  def inSafemode: Boolean = {
-    val msg: (String, String, Int) = Shell.execute(home + "bin/hadoop dfsadmin -safemode get", true)
-    val status = msg._1.toLowerCase
-    if (status.contains("off")) false else true
-  }
+  override def configuration() = SystemConfig(config, List(
+    SystemConfig.Entry[Model.Hosts]("system.hadoop.config.masters",
+      "%s/masters".format(config.getString("system.hadoop.paths.config")),
+      "/templates/hadoop/conf/hosts.mustache", mc),
+    SystemConfig.Entry[Model.Hosts]("system.hadoop.config.slaves",
+      "%s/slaves".format(config.getString("system.hadoop.paths.config")),
+      "/templates/hadoop/conf/hosts.mustache", mc),
+    SystemConfig.Entry[Model.Env]("system.hadoop.config.env",
+      "%s/hadoop-env.sh".format(config.getString("system.hadoop.paths.config")),
+      "/templates/hadoop/conf/hadoop-env.sh.mustache", mc),
+    SystemConfig.Entry[Model.Site]("system.hadoop.config.core",
+      "%s/core-site.xml".format(config.getString("system.hadoop.paths.config")),
+      "/templates/hadoop/conf/site.xml.mustache", mc),
+    SystemConfig.Entry[Model.Site]("system.hadoop.config.hdfs",
+      "%s/hdfs-site.xml".format(config.getString("system.hadoop.paths.config")),
+      "/templates/hadoop/conf/site.xml.mustache", mc)
+  ))
+
+  // ---------------------------------------------------
+  // FileSystem.
+  // ---------------------------------------------------
 
   /**
    * copies the given file to hdfs input directory and returns the path to
@@ -76,11 +102,9 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSy
    * @return path on hdfs
    */
   def setInput(from: File): File = {
-    val to: File = new File(config.getString("paths.hadoop.v1.input"), from.getName)
-    logger.info("Copy Input data from %s to %s...".format(from, to))
-    if (!to.exists) {
-      Shell.execute(home + "bin/hadoop fs -put %s %s".format(from, to), true)
-    }
+    val to: File = new File("foobar") // new File(config.tring("paths.hadoop.v1.input"), from.getName)
+    //    logger.info("Copy Input data from %s to %s...".format(from, to))
+    //    Shell.execute(home + "bin/hadoop fs -put %s %s".format(from, to), logOutput = true)
     to
   }
 
@@ -93,46 +117,44 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSy
    * @return path on local fs for the output file
    */
   def getOutput(from: File, to: File) = {
-      logger.info("Copy Input data from %s to %s...".format(from, to))
-      Shell.execute(home + "bin/hadoop fs -get %s %s".format(from, to), true)
-      Shell.execute(home + "bin/hadoop fs -rmr %s".format(from), true)
+    //    logger.info("Copy Input data from %s to %s...".format(from, to))
+    //    Shell.execute(home + "bin/hadoop fs -get %s %s".format(from, to), logOutput = true)
+  }
+
+  // ---------------------------------------------------
+  // Helper methods.
+  // ---------------------------------------------------
+
+  private def format() = {
+    val user = config.getString("system.hadoop.user")
+    val nameDir = config.getString("system.hadoop.config.hdfs.dfs.name.dir")
+
+    logger.info(s"Formatting namenode")
+    Shell.execute("echo 'Y' | %s/bin/hadoop namenode -format".format(config.getString("system.hadoop.paths.home")))
+
+    logger.info(s"Fixing data directories")
+    for (dataNode <- config.getStringList("system.hadoop.config.slaves").asScala) {
+      for (dataDir <- config.getString("system.hadoop.config.hdfs.dfs.data.dir").split(',')) {
+        logger.info(s"Initializing data directory $dataDir at datanode $dataNode")
+        Shell.execute( s""" ssh $user@$dataNode "rm -Rf $dataDir/current" """)
+        Shell.execute( s""" ssh $user@$dataNode "mkdir -p $dataDir/current" """)
+        logger.info(s"Copying namenode's VERSION file to datanode $dataNode")
+        Shell.execute( s""" scp $nameDir/current/VERSION $user@$dataNode:$dataDir/current/VERSION.backup """)
+        logger.info(s"Adapting VERSION file on datanode $dataNode")
+        Shell.execute( s""" ssh $user@$dataNode "cat $dataDir/current/VERSION.backup | sed '3 i storageID=' | sed 's/storageType=NAME_NODE/storageType=DATA_NODE/g'" > $dataDir/current/VERSION """)
+        Shell.execute( s""" ssh $user@$dataNode "rm -Rf $dataDir/current/VERSION.backup" """)
+      }
+    }
   }
 
   /**
-   * configure hdfs
+   * Checks if HDFS is in safemode.
    *
-   * the necessary config files are created with the given configuration
-   * if there are several runs, a new config file can be passed and new
-   * configuration files in the hadoop conf folder are created (overwritten)
-   * @param conf the configuration object that is used to read the parameters
+   * @return
    */
-  def configure(conf: Config) = {
-    logger.info("Configuring " + toString + "...")
-    val configPath: String = conf.getString("paths.hadoop.v1.home") + "/conf/"
-    // hadoop-env
-    var names: List[String] = conf.getStringList("hadoop.v1.hadoop-env.names").asScala.toList
-    var values: List[String] = conf.getStringList("hadoop.v1.hadoop-env.values").asScala.toList
-    val envString = envTemplate(names, values)
-    printToFile(new File(configPath + "hadoop-env.sh"))(p => {
-      envString.foreach(p.println)
-    })
-    // core-site.xml
-    names = conf.getStringList("hdfs.v1.core-site.names").asScala.toList
-    values = conf.getStringList("hdfs.v1.core-site.values").asScala.toList
-    var confString = configTemplate(names, values)
-    scala.xml.XML.save(configPath + "core-site.xml", confString, "UTF-8", true, null)
-    // hdfs-site.xml
-    names = conf.getStringList("hdfs.v1.hdfs-site.names").asScala.toList
-    values = conf.getStringList("hdfs.v1.hdfs-site.values").asScala.toList
-    confString = configTemplate(names, values)
-    scala.xml.XML.save(configPath + "hdfs-site.xml", confString, "UTF-8", true, null)
-    // mapred-site.xml
-    names = conf.getStringList("hadoop.v1.mapred-site.names").asScala.toList
-    values = conf.getStringList("hadoop.v1.mapred-site.values").asScala.toList
-    confString = configTemplate(names, values)
-    scala.xml.XML.save(configPath + "mapred-site.xml", confString, "UTF-8", true, null)
+  private def inSafemode: Boolean = {
+    val msg = Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/hadoop dfsadmin -safemode get")
+    val status = msg._1.toLowerCase
+    !status.contains("off")
   }
-
-  override def toString = "HDFS v1"
-
 }
