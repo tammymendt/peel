@@ -33,7 +33,6 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
       }
     }
 
-    logger.info(s"Checking system configuration")
     configuration().update()
 
     if (config.getBoolean("system.hadoop.format")) format()

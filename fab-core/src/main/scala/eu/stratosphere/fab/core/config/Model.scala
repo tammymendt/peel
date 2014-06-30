@@ -1,8 +1,10 @@
 package eu.stratosphere.fab.core.config
 
-import com.typesafe.config.Config
-import scala.collection.JavaConverters._
+import java.util.HashMap
 
+import com.typesafe.config.{Config, ConfigObject}
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
 trait Model {
@@ -44,6 +46,27 @@ object Model {
       }
 
       collect(c.withOnlyPath(prefix))
+    }
+  }
+
+  class Yaml(val c: Config, val prefix: String) extends HashMap[String, Object] with Model {
+
+    // constructor
+    {
+      def collect(c: ConfigObject, m: HashMap[String, Object]): Unit = {
+        val keys = (for (x <- c.entrySet().asScala) yield x.getKey.split('.').head).toSet
+        for (k <- keys) c.get(k) match {
+          case v: ConfigObject =>
+            val child = new HashMap[String, Object]
+            m.put(k, child)
+            collect(v, child)
+          case _ =>
+            m.put(k, c.get(k).unwrapped())
+        }
+      }
+
+      collect(c.getConfig(prefix).root(), this)
+      Unit
     }
   }
 
