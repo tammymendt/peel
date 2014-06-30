@@ -15,7 +15,7 @@ class Hadoop(lifespan: Lifespan, dependencies: Set[System] = Set()) extends Expe
   }
 
   def tearDown(): Unit = {
-    logger.info("Tearind down system %s...".format(toString))
+    logger.info("Tearing down system %s...".format(toString))
     Shell.execute(home + "bin/stop-mapred.sh", true)
   }
 

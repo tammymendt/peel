@@ -39,10 +39,11 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSy
    *
    * Shuts down NameNode, Jobtracker and all other Nodes
    */
-  //TODO remove data folders
+  //TODO remove data folders (input on hdfs, hadoop tmp dir, ...)
   def tearDown(): Unit = {
     logger.info("Tearing down " + toString + "...")
     Shell.execute(home + "bin/stop-dfs.sh", true)
+    Shell.rmDir(home)
   }
 
   /**
@@ -77,7 +78,9 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSy
   def setInput(from: File): File = {
     val to: File = new File(config.getString("paths.hadoop.v1.input"), from.getName)
     logger.info("Copy Input data from %s to %s...".format(from, to))
-    Shell.execute(home + "bin/hadoop fs -put %s %s".format(from, to), true)
+    if (!to.exists) {
+      Shell.execute(home + "bin/hadoop fs -put %s %s".format(from, to), true)
+    }
     to
   }
 
@@ -92,6 +95,7 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set()) extends FileSy
   def getOutput(from: File, to: File) = {
       logger.info("Copy Input data from %s to %s...".format(from, to))
       Shell.execute(home + "bin/hadoop fs -get %s %s".format(from, to), true)
+      Shell.execute(home + "bin/hadoop fs -rmr %s".format(from), true)
   }
 
   /**

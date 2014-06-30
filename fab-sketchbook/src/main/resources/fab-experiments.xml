@@ -34,7 +34,7 @@
                     <constructor-arg name="arguments">
                         <list>
                             <value>experiment2.conf</value>
-                            <value>/examples/stratosphere-java-examples-0.5.1-WordCount.jar</value>
+                            <value>/home/felix/IdeaProjects/experiment-framework/fab-sketchbook/src/main/resources/stratosphere-0.5.1/examples/stratosphere-java-examples-0.5.1-WordCount.jar</value>
                             <value>/tmp/input.txt</value>
                             <value>/tmp/output.txt</value>
                         </list>
