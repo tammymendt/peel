@@ -20,7 +20,6 @@
                     <constructor-arg name="config">
                         <value>
                             experiment.name.base = wc.dop02
-                            system.default.config.slaves = [ "cloud-7" ]
                         </value>
                     </constructor-arg>
                 </bean>

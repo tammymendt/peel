@@ -47,7 +47,7 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
   override def tearDown(): Unit = {
     logger.info(s"Tearing down '$toString'")
 
-    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh", logOutput = true)
+    Shell.execute(s"${config.getString("system.hadoop.paths.home")}/bin/stop-dfs.sh")
 
     if (config.getBoolean("system.hadoop.format")) format()
   }
