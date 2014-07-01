@@ -1,30 +1,96 @@
 package eu.stratosphere.fab.extensions.beans.system.hadoop
 
 import java.io.File
+import java.nio.file.{Paths, Files}
 
 import com.samskivert.mustache.Mustache
 import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
 import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, System}
-import eu.stratosphere.fab.core.config.SystemConfig
+import eu.stratosphere.fab.core.config.{Model, SystemConfig}
+import eu.stratosphere.fab.core.util.Shell
 
 class MapReduce(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.Compiler) extends ExperimentRunner("MapReduce", lifespan, dependencies, mc) {
 
   override def setUp(): Unit = {
     logger.info(s"Starting system '$toString'...")
+
+    if (config.hasPath("system.hadoop.path.archive")) {
+      if (!Files.exists(Paths.get(config.getString("system.hadoop.path.home")))) {
+        logger.info(s"Extracting archive ${config.getString("system.hadoop.path.archive.src")} to ${config.getString("system.hadoop.path.archive.dst")}")
+        Shell.untar(config.getString("system.hadoop.path.archive.src"), config.getString("system.hadoop.path.archive.dst"))
+
+        logger.info(s"Changing owner of ${config.getString("system.hadoop.path.home")} to ${config.getString("system.hadoop.user")}:${config.getString("system.hadoop.group")}")
+        Shell.execute("chown -R %s:%s %s".format(
+          config.getString("system.hadoop.user"),
+          config.getString("system.hadoop.group"),
+          config.getString("system.hadoop.path.home")))
+      }
+    }
+
+    logger.info(s"Checking system configuration")
+    configuration().update()
+
+    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-mapred.sh")
+    logger.info(s"Waiting for all tasktrackers to start")
+    waitUntilAllTaskTrackersRunning()
+    logger.info(s"System '$toString' is now running")
   }
 
   override def tearDown(): Unit = {
-    logger.info(s"Tearing down system '$toString'...")
+    logger.info(s"Tearing down system '$toString'")
+
+    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-mapred.sh", logOutput = true)
   }
 
   override def update(): Unit = {
-    logger.info(s"Updating system '$toString'...")
+    logger.info(s"Checking system configuration of '$toString'")
+
+    val c = configuration()
+    if (c.hasChanged) {
+      logger.info(s"Configuration changed, restarting '$toString'...")
+      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-mapred.sh", logOutput = true)
+
+      c.update()
+
+      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-mapred.sh")
+      logger.info(s"Waiting for all tasktrackers to start")
+      waitUntilAllTaskTrackersRunning()
+      logger.info(s"System '$toString' is now running")
+    }
   }
 
   override def run(job: String, input: List[File], output: File) = {
     logger.info("Running MapReduce job")
-//    Shell.execute(home + "bin/hadoop jar %s %s %s".format(job, input.mkString(" "), output), true)
   }
 
-  override def configuration() = SystemConfig(config, Nil)
+  override def configuration() = SystemConfig(config, List(
+    SystemConfig.Entry[Model.Hosts]("system.hadoop.config.masters",
+      "%s/masters".format(config.getString("system.hadoop.path.config")),
+      "/templates/hadoop/conf/hosts.mustache", mc),
+    SystemConfig.Entry[Model.Hosts]("system.hadoop.config.slaves",
+      "%s/slaves".format(config.getString("system.hadoop.path.config")),
+      "/templates/hadoop/conf/hosts.mustache", mc),
+    SystemConfig.Entry[Model.Env]("system.hadoop.config.env",
+      "%s/hadoop-env.sh".format(config.getString("system.hadoop.path.config")),
+      "/templates/hadoop/conf/hadoop-env.sh.mustache", mc),
+    SystemConfig.Entry[Model.Site]("system.hadoop.config.core",
+      "%s/core-site.xml".format(config.getString("system.hadoop.path.config")),
+      "/templates/hadoop/conf/site.xml.mustache", mc),
+    SystemConfig.Entry[Model.Site]("system.hadoop.config.mapred",
+      "%s/mapred-site.xml".format(config.getString("system.hadoop.path.config")),
+      "/templates/hadoop/conf/site.xml.mustache", mc)
+  ))
+
+  private def waitUntilAllTaskTrackersRunning(): Unit = {
+    val user = config.getString("system.hadoop.user")
+    val logDir = config.getString("system.hadoop.path.log")
+
+    val totl = config.getStringList("system.hadoop.config.slaves").size()
+    val init = Integer.parseInt(Shell.execute( s"""cat $logDir/hadoop-$user-jobtracker-*.log | grep 'Adding a new node:' | wc -l""")._1.trim())
+    var curr = init
+    while (curr - init < totl) {
+      Thread.sleep(1000)
+      curr = Integer.parseInt(Shell.execute( s"""cat $logDir/hadoop-$user-jobtracker-*.log | grep 'Adding a new node:' | wc -l""")._1.trim())
+    } // TODO: don't loop to infinity
+  }
 }

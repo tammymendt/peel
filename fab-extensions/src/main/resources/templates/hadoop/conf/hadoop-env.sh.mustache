@@ -15,7 +15,7 @@
 # export HADOOP_HEAPSIZE=2000
 
 # Extra Java runtime options.  Empty by default.
-# export HADOOP_OPTS=-server
+{{#HADOOP_OPTS}}export HADOOP_OPTS={{HADOOP_OPTS}}{{/HADOOP_OPTS}}{{^HADOOP_OPTS}}# export HADOOP_OPTS=-server{{/HADOOP_OPTS}}
 
 # Command specific options appended to HADOOP_OPTS when specified
 export HADOOP_NAMENODE_OPTS="-Dcom.sun.management.jmxremote $HADOOP_NAMENODE_OPTS"
@@ -51,7 +51,7 @@ export HADOOP_JOBTRACKER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_JOBTRACKER
 # export HADOOP_PID_DIR=/var/hadoop/pids
 
 # A string representing this instance of hadoop. $USER by default.
-# export HADOOP_IDENT_STRING=$USER
+{{#HADOOP_IDENT_STRING}}export HADOOP_IDENT_STRING={{HADOOP_IDENT_STRING}}{{/HADOOP_IDENT_STRING}}{{^HADOOP_IDENT_STRING}}# export HADOOP_IDENT_STRING=$USER{{/HADOOP_IDENT_STRING}}
 
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export HADOOP_NICENESS=10

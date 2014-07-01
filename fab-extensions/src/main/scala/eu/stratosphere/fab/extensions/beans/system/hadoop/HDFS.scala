@@ -35,21 +35,21 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
 
     logger.info(s"Checking system configuration")
     configuration().update()
-//
-//    if (config.getBoolean("system.hadoop.format")) format()
-//
-//    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
-//    logger.info(s"Waiting for safemode to exit")
-//    while (inSafemode) Thread.sleep(1000)
-//    logger.info(s"System '$toString' is now running")
+
+    if (config.getBoolean("system.hadoop.format")) format()
+
+    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
+    logger.info(s"Waiting for safemode to exit")
+    while (inSafemode) Thread.sleep(1000)
+    logger.info(s"System '$toString' is now running")
   }
 
   override def tearDown(): Unit = {
-    logger.info(s"Tearing down '$toString'")
+    logger.info(s"Tearing down system '$toString'")
 
-//    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
-//
-//    if (config.getBoolean("system.hadoop.format")) format()
+    Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
+
+    if (config.getBoolean("system.hadoop.format")) format()
   }
 
   override def update(): Unit = {
@@ -57,19 +57,19 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
 
     val c = configuration()
     if (c.hasChanged) {
-//      logger.info(s"Configuration changed, restarting '$toString'...")
-//      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
-//
-//      if (config.getBoolean("system.hadoop.format")) format()
-//
-//      c.update()
-//
-//      if (config.getBoolean("system.hadoop.format")) format()
-//
-//      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
-//      logger.info(s"Waiting for safemode to exit")
-//      while (inSafemode) Thread.sleep(1000)
-//      logger.info(s"System '$toString' is now running")
+      logger.info(s"Configuration changed, restarting '$toString'...")
+      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh", logOutput = true)
+
+      if (config.getBoolean("system.hadoop.format")) format()
+
+      c.update()
+
+      if (config.getBoolean("system.hadoop.format")) format()
+
+      Shell.execute(s"${config.getString("system.hadoop.path.home")}/bin/start-dfs.sh")
+      logger.info(s"Waiting for safemode to exit")
+      while (inSafemode) Thread.sleep(1000)
+      logger.info(s"System '$toString' is now running")
     }
   }
 

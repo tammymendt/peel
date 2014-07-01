@@ -65,8 +65,6 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
             case _ => Unit
           }
 
-          logger.info("Slaves: " + expConfig.getString("system.hadoop.config.mapred.mapred.job.tracker"))
-
           for (r <- 1 to e.runs) {
             e.config = expConfig
               .withValue("experiment.run", ConfigValueFactory.fromAnyRef(r))
@@ -118,7 +116,7 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
         config = ConfigFactory.parseResources(s"${s.defaultName.toLowerCase}.conf", options).withFallback(config)
         // load {system.name}.conf
         if (s.name.toLowerCase != s.defaultName.toLowerCase)
-          config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.defaultName.toLowerCase}.conf"), options).withFallback(config)
+          config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.name.toLowerCase}.conf"), options).withFallback(config)
       case _ => Unit
     }
 

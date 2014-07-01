@@ -22,13 +22,13 @@ object Model {
       def collect(c: Config): Unit = {
         for (e <- c.entrySet().asScala) e.getValue match {
           case c: Config => collect(c)
-          case _ => buffer += Pair(e.getKey.stripPrefix(s"$prefix."), c.getString(e.getKey))
+          case _ => buffer += Pair(e.getKey.stripPrefix(s"$prefix.").stripSuffix(".\"_root_\""), c.getString(e.getKey))
         }
       }
 
       collect(c.withOnlyPath(prefix))
 
-      buffer.toList.asJava
+      buffer.toList.sortBy(x => x.name).asJava
     }
   }
 
@@ -39,7 +39,7 @@ object Model {
       def collect(c: Config): Unit = {
         for (e <- c.entrySet().asScala) e.getValue match {
           case c: Config => collect(c)
-          case _ => this.put(e.getKey.stripPrefix(s"$prefix."), c.getString(e.getKey))
+          case _ => this.put(e.getKey.stripPrefix(s"$prefix.").stripSuffix(".\"_root_\""), c.getString(e.getKey))
         }
       }
 

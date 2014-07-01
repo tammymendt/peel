@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Systems -->
+    <bean id="hdfs.alexander-t540" parent="hdfs"/>
+    <bean id="mapreduce.alexander-t540" parent="mapreduce">
+        <constructor-arg name="dependencies">
+            <set value-type="eu.stratosphere.fab.core.beans.system.System.System">
+                <ref bean="hdfs.alexander-t540"/>
+            </set>
+        </constructor-arg>
+    </bean>
+    <bean id="stratosphere.alexander-t540" parent="stratosphere">
+        <constructor-arg name="dependencies">
+            <set value-type="eu.stratosphere.fab.core.beans.system.System.System">
+                <!--ref bean="hdfs.alexander-t540"/-->
+                <ref bean="mapreduce.alexander-t540"/>
+            </set>
+        </constructor-arg>
+    </bean>
+
+    <!-- Experiments -->
+    <bean id="experiment.stratosphere" class="eu.stratosphere.fab.core.beans.experiment.Experiment" abstract="true">
+        <constructor-arg name="runs" value="1"/>
+        <constructor-arg name="runner" ref="stratosphere.alexander-t540"/>
+    </bean>
+    <bean id="experiment.stratosphere.wc" parent="experiment.stratosphere" abstract="true">
+        <constructor-arg name="command">
+            <value>${system.hadoop.paths.home}/examples/stratosphere-java-examples-0.5.1-WordCount.jar ${system.hadoop.paths.input}/tmp/input.txt ${system.hadoop.paths.output}/tmp/output.txt</value>
+        </constructor-arg>
+    </bean>
+
+    <bean id="wc" class="eu.stratosphere.fab.core.beans.experiment.ExperimentSuite">
+        <constructor-arg name="experiments">
+            <list>
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop02
+                            system.default.config.slaves = [ "localhost" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                <!--
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop16
+                            system.default.config.slaves = [ "cloud-7" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop32
+                            system.default.config.slaves = [ "cloud-7", "cloud-8" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop48
+                            system.default.config.slaves = [ "cloud-7", "cloud-8", "cloud-9" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                <bean parent="experiment.stratosphere.wc">
+                    <constructor-arg name="config">
+                        <value>
+                            experiment.name.base = wc.dop64
+                            system.default.config.slaves = [ "cloud-7", "cloud-8", "cloud-9", "cloud-10" ]
+                        </value>
+                    </constructor-arg>
+                </bean>
+                -->
+            </list>
+        </constructor-arg>
+    </bean>
+
+</beans>

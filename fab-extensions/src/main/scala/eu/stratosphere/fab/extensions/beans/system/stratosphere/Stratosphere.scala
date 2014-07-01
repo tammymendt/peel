@@ -10,11 +10,11 @@ import eu.stratosphere.fab.core.config.SystemConfig
 class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.Compiler) extends ExperimentRunner("Stratosphere", lifespan, dependencies, mc) {
 
   override def setUp(): Unit = {
-    logger.info(s"Starting '$toString'")
+    logger.info(s"Starting system '$toString'")
   }
 
   override def tearDown(): Unit = {
-    logger.info(s"Tearing down '$toString'")
+    logger.info(s"Tearing down system '$toString'")
   }
 
   override def update(): Unit = {
