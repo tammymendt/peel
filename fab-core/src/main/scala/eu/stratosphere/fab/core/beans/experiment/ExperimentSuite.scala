@@ -114,9 +114,8 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
       case s: System =>
         // load {system.defaultName}.conf
         config = ConfigFactory.parseResources(s"${s.defaultName.toLowerCase}.conf", options).withFallback(config)
-        // load {system.name}.conf
-        if (s.name.toLowerCase != s.defaultName.toLowerCase)
-          config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.name.toLowerCase}.conf"), options).withFallback(config)
+        // load {app.path.config}/{system.name}.{app.hostname}.conf
+        config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.name.toLowerCase}.${System.getProperty("app.hostname")}.conf"), options).withFallback(config)
       case _ => Unit
     }
 

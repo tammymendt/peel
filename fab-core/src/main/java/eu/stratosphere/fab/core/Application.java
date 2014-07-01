@@ -1,5 +1,7 @@
 package eu.stratosphere.fab.core;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Paths;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -47,6 +49,7 @@ public class Application {
             System.setProperty("app.path.log", Paths.get(ns.getString("app.path.log")).normalize().toAbsolutePath().toString());
             System.setProperty("app.path.fixtures", Paths.get(ns.getString("app.path.fixtures")).normalize().toAbsolutePath().toString());
             System.setProperty("app.suite", ns.getString("app.suite"));
+            System.setProperty("app.hostname", ns.getString("app.hostname"));
 
             // add new root file appender
             org.apache.log4j.RollingFileAppender appender = new org.apache.log4j.RollingFileAppender();
@@ -85,6 +88,12 @@ public class Application {
                 .setDefault("log")
                 .metavar("PATH")
                 .help("log folder");
+        parser.addArgument("--hostname")
+                .type(String.class)
+                .dest("app.hostname")
+                .setDefault(getHostname())
+                .metavar("NAME")
+                .help("this machine hostname");
 
         // command: run-suite
         Subparser runSuite = subparsers.addParser("run-suite", true);
@@ -102,5 +111,13 @@ public class Application {
         //@formatter:on
 
         return parser;
+    }
+
+    private static String getHostname() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (IOException e) {
+            return "localhost";
+        }
     }
 }

@@ -3,28 +3,10 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <!-- Systems -->
-    <bean id="hdfs.alexander-t540" parent="hdfs"/>
-    <bean id="mapreduce.alexander-t540" parent="mapreduce">
-        <constructor-arg name="dependencies">
-            <set value-type="eu.stratosphere.fab.core.beans.system.System.System">
-                <ref bean="hdfs.alexander-t540"/>
-            </set>
-        </constructor-arg>
-    </bean>
-    <bean id="stratosphere.alexander-t540" parent="stratosphere">
-        <constructor-arg name="dependencies">
-            <set value-type="eu.stratosphere.fab.core.beans.system.System.System">
-                <!--ref bean="hdfs.alexander-t540"/-->
-                <ref bean="mapreduce.alexander-t540"/>
-            </set>
-        </constructor-arg>
-    </bean>
-
     <!-- Experiments -->
     <bean id="experiment.stratosphere" class="eu.stratosphere.fab.core.beans.experiment.Experiment" abstract="true">
         <constructor-arg name="runs" value="1"/>
-        <constructor-arg name="runner" ref="stratosphere.alexander-t540"/>
+        <constructor-arg name="runner" ref="stratosphere.hdfs"/>
     </bean>
     <bean id="experiment.stratosphere.wc" parent="experiment.stratosphere" abstract="true">
         <constructor-arg name="command">
