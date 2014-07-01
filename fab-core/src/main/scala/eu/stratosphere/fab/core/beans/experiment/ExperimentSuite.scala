@@ -4,6 +4,7 @@ import java.io.File
 
 import com.typesafe.config._
 import eu.stratosphere.fab.core.beans.system.{Lifespan, System}
+import eu.stratosphere.fab.core.config.Configurable
 import eu.stratosphere.fab.core.graph.{DependencyGraph, Node}
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanNameAware
@@ -15,13 +16,12 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
   var name = "experiments"
 
   def run() = {
-    logger.info(s"Running experiments suite '${name}'")
+    logger.info(s"Running experiments suite '$name'")
     logger.info(s"Constructing dependency graph for suite")
     val graph = createGraph()
 
     //TODO check for cycles in the graph
-    if (graph.isEmpty)
-      throw new RuntimeException("Suite is empty!")
+    if (graph.isEmpty) throw new RuntimeException("Suite is empty!")
 
     // SUITE lifespan
     try {
@@ -29,7 +29,7 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
 
       // update config
       for (n <- graph.vertices) n match {
-        case s: System => s.config = baseConfig
+        case s: Configurable => s.config = baseConfig
         case _ => Unit
       }
 
@@ -49,7 +49,7 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
           // update config
           val expConfig = loadConfig(graph, Some(e))
           for (n <- graph.descendants(e).reverse) n match {
-            case s: System => s.config = expConfig
+            case s: Configurable => s.config = expConfig
             case _ => Unit
           }
 
@@ -64,6 +64,9 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
             case s: System => if (s.lifespan == Lifespan.EXPERIMENT) s.setUp()
             case _ => Unit
           }
+
+          logger.info("Materializing exeriment data sets")
+          for (n <- e.data) n.materialize()
 
           for (r <- 1 to e.runs) {
             e.config = expConfig
@@ -87,7 +90,6 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
       }
 
     }
-
     catch {
       case e: Exception => logger.error(s"Exception of type ${e.getClass} in ExperimentSuite: ${e.getMessage}")
       case _: Throwable => logger.error(s"Exception in ExperimentSuite")
@@ -114,17 +116,18 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
       case s: System =>
         // load {system.defaultName}.conf
         config = ConfigFactory.parseResources(s"${s.defaultName.toLowerCase}.conf", options).withFallback(config)
-        // load {app.path.config}/{system.name}.{app.hostname}.conf
-        config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${s.name.toLowerCase}.${System.getProperty("app.hostname")}.conf"), options).withFallback(config)
+        // load {app.path.config}/{app.hostname}/{system.name}.conf
+        config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${System.getProperty("app.hostname")}/${s.name.toLowerCase}.conf"), options).withFallback(config)
       case _ => Unit
     }
 
-    // load application configuration
+    // load {app.path.config}/application.conf
     config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/application.conf"), options).withFallback(config)
+    // load {app.path.config}/{app.hostname}/application.conf
+    config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${System.getProperty("app.hostname")}/application.conf"), options).withFallback(config)
 
     // load the experiment config
-    if (exp.isDefined) config =
-      exp.get.config.withFallback(config)
+    if (exp.isDefined) config = exp.get.config.withFallback(config)
 
     // load system properties
     config = ConfigFactory.systemProperties.withFallback(config)
@@ -144,6 +147,7 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
 
     def processDependencies(s: System): Unit = {
       if (s.dependencies.nonEmpty) {
+        // add dependencies to the system dependencies
         for (d <- s.dependencies) {
           g.addEdge(s, d)
           processDependencies(d)
@@ -153,8 +157,18 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
 
     for (e <- experiments) {
       g.addEdge(this, e)
+      // add the experiment runner
       g.addEdge(e, e.runner)
       processDependencies(e.runner)
+      // add the data sets and their dependencies
+      for (d <- e.data) {
+        g.addEdge(e, d)
+        // add the data set dependencies
+        for (x <- d.dependencies) {
+          g.addEdge(d, x)
+          processDependencies(x)
+        }
+      }
     }
 
     g // return the graph

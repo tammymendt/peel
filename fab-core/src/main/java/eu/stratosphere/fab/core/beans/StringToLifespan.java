@@ -9,6 +9,8 @@ public class StringToLifespan implements Converter<String, Value> {
     @Override
     public Value convert(String s) {
         switch (s) {
+            case "PROVIDED":
+                return Lifespan.PROVIDED();
             case "SUITE":
                 return Lifespan.SUITE();
             case "EXPERIMENT":

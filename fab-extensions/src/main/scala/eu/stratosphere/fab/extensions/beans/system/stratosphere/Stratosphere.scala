@@ -6,7 +6,7 @@ import eu.stratosphere.fab.core.beans.system.Lifespan.Lifespan
 import eu.stratosphere.fab.core.beans.system.{ExperimentRunner, System}
 import eu.stratosphere.fab.core.config.{Model, SystemConfig}
 import java.nio.file.{Paths, Files}
-import eu.stratosphere.fab.core.util.Shell
+import eu.stratosphere.fab.core.util.shell
 
 class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.Compiler) extends ExperimentRunner("Stratosphere", lifespan, dependencies, mc) {
 
@@ -16,19 +16,20 @@ class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mu
     if (config.hasPath("system.stratosphere.path.archive")) {
       if (!Files.exists(Paths.get(config.getString("system.stratosphere.path.home")))) {
         logger.info(s"Extracting archive ${config.getString("system.stratosphere.path.archive.src")} to ${config.getString("system.stratosphere.path.archive.dst")}")
-        Shell.untar(config.getString("system.stratosphere.path.archive.src"), config.getString("system.stratosphere.path.archive.dst"))
+        shell.untar(config.getString("system.stratosphere.path.archive.src"), config.getString("system.stratosphere.path.archive.dst"))
 
         logger.info(s"Changing owner of ${config.getString("system.stratosphere.path.home")} to ${config.getString("system.stratosphere.user")}:${config.getString("system.stratosphere.group")}")
-        Shell.execute("chown -R %s:%s %s".format(
+        shell ! "chown -R %s:%s %s".format(
           config.getString("system.stratosphere.user"),
           config.getString("system.stratosphere.group"),
-          config.getString("system.stratosphere.path.home")))
+          config.getString("system.stratosphere.path.home"))
       }
     }
 
     configuration().update()
 
-    Shell.execute(s"${config.getString("system.stratosphere.path.home")}/bin/start-cluster.sh")
+    shell ! s"${config.getString("system.stratosphere.path.home")}/bin/start-cluster.sh"
+    shell ! s"${config.getString("system.stratosphere.path.home")}/bin/start-webclient.sh"
     waitUntilAllTaskManagersRunning()
     logger.info(s"System '$toString' is now running")
   }
@@ -44,14 +45,15 @@ class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mu
 
   override def run(job: String, input: List[File], output: File) = {
     logger.info("Running Stratosphere Job...")
-    //Shell.execute(home + "bin/stratosphere run %s %s %s".format(job, input.mkString(" "), output), true)
+    //Shell ! home + "bin/stratosphere run %s %s %s".format(job, input.mkString(" "), output)
   }
 
 
   override def tearDown(): Unit = {
     logger.info(s"Tearing down system '$toString'")
 
-    Shell.execute(s"${config.getString("system.stratosphere.path.home")}/bin/stop-cluster.sh")
+    shell ! s"${config.getString("system.stratosphere.path.home")}/bin/stop-cluster.sh"
+    shell ! s"${config.getString("system.stratosphere.path.home")}/bin/stop-webclient.sh"
   }
 
   override def update(): Unit = {
@@ -60,11 +62,11 @@ class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mu
     val c = configuration()
     if (c.hasChanged) {
       logger.info(s"Configuration changed, restarting '$toString'...")
-      Shell.execute(s"${config.getString("system.stratosphere.path.home")}/bin/stop-cluster.sh")
+      shell ! s"${config.getString("system.stratosphere.path.home")}/bin/stop-cluster.sh"
 
       c.update()
 
-      Shell.execute(s"${config.getString("system.stratosphere.path.home")}/bin/start-cluster.sh")
+      shell ! s"${config.getString("system.stratosphere.path.home")}/bin/start-cluster.sh"
       waitUntilAllTaskManagersRunning()
       logger.info(s"System '$toString' is now running")
     }
@@ -75,11 +77,11 @@ class Stratosphere(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mu
     val logDir = config.getString("system.stratosphere.path.log")
 
     val totl = config.getStringList("system.hadoop.config.slaves").size()
-    val init = Integer.parseInt(Shell.execute( s"""cat $logDir/stratosphere-$user-jobmanager-*.log | grep 'Creating instance' | wc -l""")._1.trim())
+    val init = Integer.parseInt((shell !! s"""cat $logDir/stratosphere-$user-jobmanager-*.log | grep 'Creating instance' | wc -l""").trim())
     var curr = init
     while (curr - init < totl) {
       Thread.sleep(1000)
-      curr = Integer.parseInt(Shell.execute( s"""cat $logDir/stratosphere-$user-jobmanager-*.log | grep 'Creating instance' | wc -l""")._1.trim())
+      curr = Integer.parseInt((shell !! s"""cat $logDir/stratosphere-$user-jobmanager-*.log | grep 'Creating instance' | wc -l""").trim())
     } // TODO: don't loop to infinity
   }
 }

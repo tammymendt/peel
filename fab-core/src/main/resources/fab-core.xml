@@ -15,8 +15,7 @@
         </property>
     </bean>
 
-    <bean id="mc" class="com.samskivert.mustache.Mustache" factory-method="compiler">
-    </bean>
+    <bean id="mc" class="com.samskivert.mustache.Mustache" factory-method="compiler" />
 
     <bean id="system" abstract="true">
         <constructor-arg name="mc" ref="mc"/>

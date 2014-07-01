@@ -3,14 +3,26 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <!-- Data sets -->
+    <bean id="dataset.shakespeare" parent="dataset.static.hdfs">
+        <constructor-arg name="src" value="${app.path.datasets}/hamlet.txt.tar.gz"/>
+        <constructor-arg name="dst" value="${system.hadoop.config.core.fs.default.name}/input/hamlet.txt"/>
+    </bean>
+
     <!-- Experiments -->
     <bean id="experiment.stratosphere" class="eu.stratosphere.fab.core.beans.experiment.Experiment" abstract="true">
-        <constructor-arg name="runs" value="1"/>
+        <constructor-arg name="runs" value="6"/>
         <constructor-arg name="runner" ref="stratosphere.hdfs"/>
     </bean>
+    <!-- WordCount -->
     <bean id="experiment.stratosphere.wc" parent="experiment.stratosphere" abstract="true">
         <constructor-arg name="command">
             <value>${system.hadoop.paths.home}/examples/stratosphere-java-examples-0.5.1-WordCount.jar ${system.hadoop.paths.input}/tmp/input.txt ${system.hadoop.paths.output}/tmp/output.txt</value>
+        </constructor-arg>
+        <constructor-arg name="data">
+            <set value-type="eu.stratosphere.fab.core.beans.data.DataSet">
+                <ref bean="dataset.shakespeare"/>
+            </set>
         </constructor-arg>
     </bean>
 

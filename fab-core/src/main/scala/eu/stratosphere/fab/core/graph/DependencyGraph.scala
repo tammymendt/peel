@@ -1,11 +1,11 @@
 package eu.stratosphere.fab.core.graph
 
 import scala.annotation.tailrec
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 class DependencyGraph[T] {
 
-  var graph: HashMap[T, Set[T]] = new HashMap[T, Set[T]]()
+  var graph: mutable.HashMap[T, Set[T]] = new mutable.HashMap[T, Set[T]]()
 
   /**
    * @return True if the graph is empty (i.e. has no nodes).
@@ -60,7 +60,7 @@ class DependencyGraph[T] {
    *
    * @param edges A list of edges to be added to the graph.
    */
-  def addEdge(edges: List[Tuple2[T, T]]): Unit = {
+  def addEdge(edges: List[(T, T)]): Unit = {
     for ((s, t) <- edges) yield addEdge(s, t)
   }
 
@@ -150,8 +150,8 @@ class DependencyGraph[T] {
   /**
    * Collects descendants in a depth-first manner starting from the given set.
    *
-   * @param toVisit
-   * @param visited
+   * @param toVisit A set of nodes that are yet to be visited.
+   * @param visited A list of already visited nodes.
    * @return
    */
   @tailrec

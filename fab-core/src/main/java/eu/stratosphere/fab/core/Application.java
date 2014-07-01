@@ -16,7 +16,7 @@ import eu.stratosphere.fab.core.beans.experiment.ExperimentSuite;
 
 public class Application {
 
-    Logger logger = LoggerFactory.getLogger(Application.class);
+    private Logger logger = LoggerFactory.getLogger(Application.class);
 
     void run() {
         try {

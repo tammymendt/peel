@@ -1,5 +1,6 @@
 package eu.stratosphere.fab.core.config
 
+import java.util
 import java.util.HashMap
 
 import com.typesafe.config.{Config, ConfigObject}
@@ -49,15 +50,15 @@ object Model {
     }
   }
 
-  class Yaml(val c: Config, val prefix: String) extends HashMap[String, Object] with Model {
+  class Yaml(val c: Config, val prefix: String) extends util.HashMap[String, Object] with Model {
 
     // constructor
     {
-      def collect(c: ConfigObject, m: HashMap[String, Object]): Unit = {
+      def collect(c: ConfigObject, m: util.HashMap[String, Object]): Unit = {
         val keys = (for (x <- c.entrySet().asScala) yield x.getKey.split('.').head).toSet
         for (k <- keys) c.get(k) match {
           case v: ConfigObject =>
-            val child = new HashMap[String, Object]
+            val child = new util.HashMap[String, Object]
             m.put(k, child)
             collect(v, child)
           case _ =>
