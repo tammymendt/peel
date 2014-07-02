@@ -5,14 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.stratosphere</groupId>
-    <artifactId>peel-framework</artifactId>
+    <artifactId>peel</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>peel-framework</name>
+    <name>peel</name>
     <packaging>pom</packaging>
 
     <properties>
         <!-- Common -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <encoding>UTF-8</encoding>
 
         <!-- Maven Plugins -->
@@ -201,6 +203,18 @@
                         <arg>-deprecation</arg>
                         <arg>-feature</arg>
                     </args>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Java compiler -->
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
 
@@ -270,6 +284,7 @@
 
     <modules>
         <module>peel-core</module>
+        <module>peel-dist</module>
         <module>peel-extensions</module>
         <module>peel-sketchbook</module>
     </modules>

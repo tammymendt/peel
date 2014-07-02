@@ -1,6 +1,7 @@
 package eu.stratosphere.peel.core.beans.experiment
 
 import java.io.File
+import java.lang.{System => Sys}
 
 import com.typesafe.config._
 import eu.stratosphere.peel.core.beans.system.{Lifespan, System}
@@ -117,14 +118,14 @@ class ExperimentSuite(final val experiments: List[Experiment]) extends Node with
         // load {system.defaultName}.conf
         config = ConfigFactory.parseResources(s"${s.defaultName.toLowerCase}.conf", options).withFallback(config)
         // load {app.path.config}/{app.hostname}/{system.name}.conf
-        config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${System.getProperty("app.hostname")}/${s.name.toLowerCase}.conf"), options).withFallback(config)
+        config = ConfigFactory.parseFile(new File(s"${Sys.getProperty("app.path.config")}/${Sys.getProperty("app.hostname")}/${s.name.toLowerCase}.conf"), options).withFallback(config)
       case _ => Unit
     }
 
     // load {app.path.config}/application.conf
-    config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/application.conf"), options).withFallback(config)
+    config = ConfigFactory.parseFile(new File(s"${Sys.getProperty("app.path.config")}/application.conf"), options).withFallback(config)
     // load {app.path.config}/{app.hostname}/application.conf
-    config = ConfigFactory.parseFile(new File(s"${System.getProperty("app.path.config")}/${System.getProperty("app.hostname")}/application.conf"), options).withFallback(config)
+    config = ConfigFactory.parseFile(new File(s"${Sys.getProperty("app.path.config")}/${Sys.getProperty("app.hostname")}/application.conf"), options).withFallback(config)
 
     // load the experiment config
     if (exp.isDefined) config = exp.get.config.withFallback(config)

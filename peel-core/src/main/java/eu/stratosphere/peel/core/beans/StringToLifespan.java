@@ -8,16 +8,14 @@ public class StringToLifespan implements Converter<String, Value> {
 
     @Override
     public Value convert(String s) {
-        switch (s) {
-            case "PROVIDED":
-                return Lifespan.PROVIDED();
-            case "SUITE":
-                return Lifespan.SUITE();
-            case "EXPERIMENT":
-                return Lifespan.EXPERIMENT();
-            default:
-                throw new IllegalArgumentException(s + " can not be converted to Scala Lifecycle Value!");
+        if (s.equals("PROVIDED")) {
+            return Lifespan.PROVIDED();
+        } else if (s.equals("SUITE")) {
+            return Lifespan.SUITE();
+        } else if (s.equals("EXPERIMENT")) {
+            return Lifespan.EXPERIMENT();
+        } else {
+            throw new IllegalArgumentException(s + " can not be converted to Scala Lifecycle Value!");
         }
     }
-
 }

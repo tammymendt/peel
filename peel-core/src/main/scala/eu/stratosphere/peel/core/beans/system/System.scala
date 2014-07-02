@@ -17,6 +17,9 @@ abstract class System(val defaultName: String,
 
   final val logger = LoggerFactory.getLogger(this.getClass)
 
+  final val pollingInterval = 3000
+  final val pollingCounter = 20
+
   override var config = ConfigFactory.empty()
 
   /**
@@ -71,4 +74,7 @@ abstract class System(val defaultName: String,
       p.close()
     }
   }
+}
+
+object System {
 }

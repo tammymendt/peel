@@ -88,9 +88,17 @@ class MapReduce(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Musta
     val totl = config.getStringList("system.hadoop.config.slaves").size()
     val init = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-jobtracker-*.log | grep 'Adding a new node:' | wc -l""").trim())
     var curr = init
+    var cntr = pollingCounter
+
     while (curr - init < totl) {
-      Thread.sleep(1000)
+      logger.info(s"Connected ${curr - init} from $totl nodes")
+      // wait a bit
+      Thread.sleep(pollingInterval)
+      // get new values
       curr = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-jobtracker-*.log | grep 'Adding a new node:' | wc -l""").trim())
-    } // TODO: don't loop to infinity
+      // timeout if counter goes below zero
+      cntr = cntr-1
+      if (cntr < 0) throw new RuntimeException(s"Cannot start system '$toString'; node connection timeout at system ")
+    }
   }
 }

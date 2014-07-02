@@ -16,16 +16,16 @@ import eu.stratosphere.peel.core.beans.experiment.ExperimentSuite;
 
 public class Application {
 
-    private Logger logger = LoggerFactory.getLogger(Application.class);
+    private final Logger logger = LoggerFactory.getLogger(Application.class);
 
     void run() {
         try {
             logger.info("############################################################");
-            logger.info("#                          EXPOSE                          #");
+            logger.info("#              PEEL TEST EXECUTION FRAMEWORK               #");
             logger.info("############################################################");
             logger.info(String.format("Running experiments from %s", System.getProperty("app.path.fixtures")));
 
-            String[] c = new String[] {"classpath:fab-core.xml", "classpath:fab-extensions.xml", "file:" + System.getProperty("app.path.fixtures")};
+            String[] c = new String[] {"classpath:peel-core.xml", "classpath:peel-extensions.xml", "file:" + System.getProperty("app.path.fixtures")};
             AbstractApplicationContext context = new FileSystemXmlApplicationContext(c);
             context.registerShutdownHook();
 
@@ -69,7 +69,7 @@ public class Application {
 
     private static ArgumentParser getArgumentParser() {
         //@formatter:off
-        ArgumentParser parser = ArgumentParsers.newArgumentParser("expose")
+        ArgumentParser parser = ArgumentParsers.newArgumentParser("peel")
                 .defaultHelp(true)
                 .description("System experiments toolkit.");
         Subparsers subparsers = parser.addSubparsers()

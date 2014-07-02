@@ -26,18 +26,25 @@
         </constructor-arg>
     </bean>
 
-    <bean id="wc" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
+    <bean id="wc.local" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
         <constructor-arg name="experiments">
             <list>
                 <bean parent="experiment.stratosphere.wc">
                     <constructor-arg name="config">
                         <value>
-                            experiment.name.base = wc.dop02
+                            experiment.name.base = wc.local
+                            system.default.config.masters = [ "localhost" ]
                             system.default.config.slaves = [ "localhost" ]
                         </value>
                     </constructor-arg>
                 </bean>
-                <!--
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <bean id="wc" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
+        <constructor-arg name="experiments">
+            <list>
                 <bean parent="experiment.stratosphere.wc">
                     <constructor-arg name="config">
                         <value>
@@ -70,7 +77,6 @@
                         </value>
                     </constructor-arg>
                 </bean>
-                -->
             </list>
         </constructor-arg>
     </bean>

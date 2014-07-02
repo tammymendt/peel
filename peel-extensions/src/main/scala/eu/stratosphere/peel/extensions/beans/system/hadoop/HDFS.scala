@@ -124,13 +124,21 @@ class HDFS(lifespan: Lifespan, dependencies: Set[System] = Set(), mc: Mustache.C
     val hostname = config.getString("app.hostname")
 
     val totl = config.getStringList("system.hadoop.config.slaves").size()
-    val init = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-namenode-$hostname.log | grep 'NameSystem.registerDatanode:' | wc -l""").trim())
+    val init = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-namenode-$hostname.log | grep 'registerDatanode:' | wc -l""").trim())
     var curr = init
-    var inSafemode = !(shell !! s"${config.getString("system.hadoop.path.home")}/bin/hadoop dfsadmin -safemode get").toLowerCase.contains("off")
-    while (curr - init < totl || inSafemode) {
-      Thread.sleep(1000)
-      curr = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-namenode-$hostname.log | grep 'NameSystem.registerDatanode:' | wc -l""").trim())
-      inSafemode = !(shell !! s"${config.getString("system.hadoop.path.home")}/bin/hadoop dfsadmin -safemode get").toLowerCase.contains("off")
+    var safe = !(shell !! s"${config.getString("system.hadoop.path.home")}/bin/hadoop dfsadmin -safemode get").toLowerCase.contains("off")
+    var cntr = pollingCounter
+
+    while (curr - init < totl || safe) {
+      logger.info(s"Connected ${curr - init} from $totl nodes, safemode is ${if (safe) "ON" else "OFF"}")
+      // wait a bit
+      Thread.sleep(pollingInterval)
+      // get new values
+      curr = Integer.parseInt((shell !! s"""cat $logDir/hadoop-$user-namenode-$hostname.log | grep 'registerDatanode:' | wc -l""").trim())
+      safe = !(shell !! s"${config.getString("system.hadoop.path.home")}/bin/hadoop dfsadmin -safemode get").toLowerCase.contains("off")
+      // timeout if counter goes below zero
+      cntr = cntr - 1
+      if (cntr < 0) throw new RuntimeException(s"Cannot start system '$toString'; node connection timeout at system ")
     } // TODO: don't loop to infinity
   }
 }

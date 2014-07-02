@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>peel-framework</artifactId>
+        <artifactId>peel</artifactId>
         <groupId>eu.stratosphere</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
