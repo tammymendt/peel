@@ -11,7 +11,7 @@
     * 3. Configure the right input data set in experiment.stratosphere.$EXP
     *
     * You can create multiple experiment and fixture beans using
-    * 'experiment.stratosphere.wc' and 'wc.cloud-7' as a blueprint.
+* 'experiment.stratosphere.wc' and 'wc.cloud-7' as a blueprint.
     *************************************************************************-->
 
     <!--************************************************************************
@@ -56,12 +56,6 @@
     * Data Sets
     *************************************************************************-->
 
-    <!-- Gutenberg -->
-    <bean id="dataset.shakespeare" parent="dataset.static.hdfs">
-        <constructor-arg name="src" value="${app.path.datasets}/hamlet.txt.gz"/>
-        <constructor-arg name="dst" value="${system.hadoop.path.input}/hamlet.txt"/>
-    </bean>
-
     <!-- Higgs: https://archive.ics.uci.edu/ml/datasets/HIGGS -->
     <bean id="dataset.higgs.S" parent="dataset.static.hdfs">
         <constructor-arg name="src" value="${app.path.datasets}/higgs.S.txt.gz"/>
@@ -80,51 +74,31 @@
         <constructor-arg name="dst" value="${system.hadoop.path.input}/higgs.XL.txt"/>
     </bean>
 
-    <!-- Docword: https://archive.ics.uci.edu/ml/datasets/Bag+of+Words -->
-    <bean id="docword.enron" parent="dataset.static.hdfs">
-        <constructor-arg name="src" value="${app.path.datasets}/docword.enron.txt.gz"/>
-        <constructor-arg name="dst" value="${system.hadoop.path.input}/docword.enron.txt"/>
-    </bean>
-    <bean id="docword.nips" parent="dataset.static.hdfs">
-        <constructor-arg name="src" value="${app.path.datasets}/docword.nips.txt.gz"/>
-        <constructor-arg name="dst" value="${system.hadoop.path.input}/docword.nips.txt"/>
-    </bean>
-    <bean id="docword.nytimes" parent="dataset.static.hdfs">
-        <constructor-arg name="src" value="${app.path.datasets}/docword.nytimes.txt.gz"/>
-        <constructor-arg name="dst" value="${system.hadoop.path.input}/docword.nytimes.txt"/>
-    </bean>
-    <bean id="docword.pubmed" parent="dataset.static.hdfs">
-        <constructor-arg name="src" value="${app.path.datasets}/docword.pubmed.txt.gz"/>
-        <constructor-arg name="dst" value="${system.hadoop.path.input}/docword.pubmed.txt"/>
-    </bean>
-
     <!--************************************************************************
     * Experiments
     *************************************************************************-->
 
+    <!-- LogReg output -->
+    <bean id="experiment.stratosphere.logreg.output" parent="experiment.output.hdfs">
+        <constructor-arg name="path" value="${system.hadoop.path.output}/logreg"/>
+    </bean>
+
     <!-- Experiment beans -->
-    <bean id="experiment.stratosphere" class="eu.stratosphere.peel.extensions.beans.system.experiment.StratosphereExperiment" abstract="true">
-        <!--constructor-arg name="runner" ref="stratosphere-0.5.1"/-->
-        <constructor-arg name="runner" ref="stratosphere-0.6-SNAPSHOT"/>
+    <bean id="experiment.stratosphere.logreg" class="eu.stratosphere.peel.extensions.beans.system.experiment.StratosphereExperiment" abstract="true">
+        <constructor-arg name="runner" ref="stratosphere-0.5.1"/>
         <constructor-arg name="runs" value="7"/>
+        <constructor-arg name="output">
+            <ref bean="experiment.stratosphere.logreg.output"/>
+        </constructor-arg>
     </bean>
 
-    <!-- WordCount output -->
-    <bean id="experiment.stratosphere.wc.output" parent="experiment.output.hdfs">
-        <constructor-arg name="path" value="${system.hadoop.path.output}/wc"/>
-    </bean>
-
-    <!-- WordCount experiment -->
-    <bean id="experiment.stratosphere.wc" parent="experiment.stratosphere" abstract="true">
+    <!-- LogReg experiment (small dataset) -->
+    <bean id="experiment.stratosphere.logreg.S" parent="experiment.stratosphere.logreg" abstract="true">
         <constructor-arg name="command">
-            <value>${system.stratosphere.path.home}/examples/stratosphere-java-examples-0.5.1-WordCount.jar ${system.hadoop.path.input}/hamlet.txt ${system.hadoop.path.output}/wc</value>
-            <!--value>${system.stratosphere.path.home}/examples/stratosphere-java-examples-0.6-SNAPSHOT-WordCount.jar ${system.hadoop.path.input}/hamlet.txt ${system.hadoop.path.output}/wc</value-->
+            <value>${app.path.jobs}/logisticRegression.jar 28 ${system.hadoop.path.input}/higgs.S.txt 0.4 750 ${system.hadoop.path.output}/logreg</value>
         </constructor-arg>
         <constructor-arg name="input">
-            <ref bean="dataset.shakespeare"/>
-        </constructor-arg>
-        <constructor-arg name="output">
-            <ref bean="experiment.stratosphere.wc.output"/>
+            <ref bean="dataset.higgs.S"/>
         </constructor-arg>
     </bean>
 
@@ -132,54 +106,60 @@
     * Fixtures
     *************************************************************************-->
 
-    <bean id="wc.local" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
+    <bean id="logreg.S.single-run" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
         <constructor-arg name="experiments">
             <list>
-                <bean parent="experiment.stratosphere.wc">
-                    <constructor-arg name="name" value="wc.local.single-run"/>
+                <bean parent="experiment.stratosphere.logreg.S">
+                    <constructor-arg name="name" value="logreg.S.single-run"/>
                     <constructor-arg name="runs" value="1"/>
                     <constructor-arg name="config">
-                        <value></value>
+                        <value>
+                            experiment.timeout = 10800
+                        </value>
                     </constructor-arg>
                 </bean>
             </list>
         </constructor-arg>
     </bean>
 
-    <bean id="wc.cloud-7" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
+    <bean id="logreg.S.cloud-7" class="eu.stratosphere.peel.core.beans.experiment.ExperimentSuite">
         <constructor-arg name="experiments">
             <list>
-                <bean parent="experiment.stratosphere.wc">
-                    <constructor-arg name="name" value="wc.dop64"/>
+                <bean parent="experiment.stratosphere.logreg.S">
+                    <constructor-arg name="name" value="logreg.S.dop64"/>
                     <constructor-arg name="config">
                         <value>
+                            experiment.timeout = 3600
                             system.default.config.slaves = [ "cloud-7", "cloud-8", "cloud-9", "cloud-10" ]
                             system.stratosphere.config.yaml.parallelization.degree.default = 64
                         </value>
                     </constructor-arg>
                 </bean>
-                <bean parent="experiment.stratosphere.wc">
-                    <constructor-arg name="name" value="wc.dop48"/>
+                <bean parent="experiment.stratosphere.logreg.S">
+                    <constructor-arg name="name" value="logreg.S.dop48"/>
                     <constructor-arg name="config">
                         <value>
+                            experiment.timeout = 3600
                             system.default.config.slaves = [ "cloud-8", "cloud-9", "cloud-10" ]
                             system.stratosphere.config.yaml.parallelization.degree.default = 48
                         </value>
                     </constructor-arg>
                 </bean>
-                <bean parent="experiment.stratosphere.wc">
-                    <constructor-arg name="name" value="wc.dop32"/>
+                <bean parent="experiment.stratosphere.logreg.S">
+                    <constructor-arg name="name" value="logreg.S.dop32"/>
                     <constructor-arg name="config">
                         <value>
+                            experiment.timeout = 3600
                             system.default.config.slaves = [ "cloud-7", "cloud-8" ]
                             system.stratosphere.config.yaml.parallelization.degree.default = 32
                         </value>
                     </constructor-arg>
                 </bean>
-                <bean parent="experiment.stratosphere.wc">
-                    <constructor-arg name="name" value="wc.dop16"/>
+                <bean parent="experiment.stratosphere.logreg.S">
+                    <constructor-arg name="name" value="logreg.S.dop16"/>
                     <constructor-arg name="config">
                         <value>
+                            experiment.timeout = 3600
                             system.default.config.slaves = [ "cloud-7" ]
                             system.stratosphere.config.yaml.parallelization.degree.default = 16
                         </value>

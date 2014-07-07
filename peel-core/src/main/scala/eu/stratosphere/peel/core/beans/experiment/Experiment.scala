@@ -1,5 +1,9 @@
 package eu.stratosphere.peel.core.beans.experiment
 
+<<<<<<< HEAD
+=======
+import java.lang.{System => Sys}
+>>>>>>> 0e588a72394aa1ce72f2a164b2273e01e1d161ce
 import java.nio.file.{Files, Path, Paths}
 
 import com.typesafe.config.Config
@@ -9,6 +13,10 @@ import eu.stratosphere.peel.core.config.Configurable
 import eu.stratosphere.peel.core.graph.Node
 import eu.stratosphere.peel.core.util.shell
 import org.slf4j.LoggerFactory
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 abstract class Experiment[+R <: System](val command: String,
                                         val runner: R,
@@ -88,10 +96,22 @@ object Experiment {
 
         try {
           // collect runner log files and their current line counts
-          val logFiles = for (pattern <- logFilePatterns; f <- (shell !! s"ls $pattern").split(java.lang.System.lineSeparator).map(_.trim)) yield f
+          val logFiles = for (pattern <- logFilePatterns; f <- (shell !! s"ls $pattern").split(Sys.lineSeparator).map(_.trim)) yield f
           val logFileCounts = Map((for (f <- logFiles) yield f -> (shell !! s"wc -l $f | cut -d' ' -f1").trim.toLong): _*)
 
-          runJob()
+          try {
+            Await.ready(future(runJob()), exp.config.getLong("experiment.timeout") seconds)
+          } catch {
+            case e: TimeoutException =>
+              logger.warn(s"Experiment run did not finish within the given time limit of ${exp.config.getLong("experiment.timeout")} seconds")
+              cancelJob()
+            case e: InterruptedException =>
+              logger.warn(s"Experiment run was interrupted")
+              cancelJob()
+            case e: Throwable =>
+              logger.warn(s"Experiment run threw an unexpected exception: ${e.getMessage}")
+              cancelJob()
+          }
 
           // copy logs
           shell ! s"rm -Rf $home/logs/*"
@@ -118,12 +138,14 @@ object Experiment {
     protected def writeState(): Unit
 
     protected def runJob(): Unit
+
+    protected def cancelJob(): Unit
   }
 
   def time[T](block: => T): (T, Long) = {
-    val t0 = java.lang.System.currentTimeMillis
+    val t0 = Sys.currentTimeMillis
     val result = block
-    val t1 = java.lang.System.currentTimeMillis
+    val t1 = Sys.currentTimeMillis
     (result, t1 - t0)
   }
 }
