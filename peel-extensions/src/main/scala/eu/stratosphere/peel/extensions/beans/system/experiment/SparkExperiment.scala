@@ -21,7 +21,7 @@ class SparkExperiment(command: String,
 
   def this(runs: Int, runner: Spark, inputs: Set[DataSet], output: ExperimentOutput, command: String, name: String, config: Config) = this(command, runner, runs, inputs, Set(output), name, config)
 
-  override def run(id: Int): Experiment.Run[Spark] = new SparkExperiment.SingleJobRun(id, this)
+  override def run(id: Int, force: Boolean): Experiment.Run[Spark] = new SparkExperiment.SingleJobRun(id, this, force)
 }
 
 object SparkExperiment {
@@ -38,7 +38,7 @@ object SparkExperiment {
   /**
    * A private inner class encapsulating the logic of single run.
    */
-  class SingleJobRun(val id: Int, val exp: SparkExperiment) extends Experiment.SingleJobRun[Spark, State] {
+  class SingleJobRun(val id: Int, val exp: SparkExperiment, val force: Boolean) extends Experiment.SingleJobRun[Spark, State] {
 
     import eu.stratosphere.peel.extensions.beans.system.experiment.SparkExperiment.StateProtocol._
 
@@ -76,7 +76,7 @@ object SparkExperiment {
     override def cancelJob() = {}
 
     private def !(command: String, outFile: String, errFile: String) = {
-      shell ! s"$command > $outFile 2> $errFile"
+      shell ! s"${exp.config.getString("system.spark.path.home")}/bin/spark-submit $command > $outFile 2> $errFile"
     }
   }
 

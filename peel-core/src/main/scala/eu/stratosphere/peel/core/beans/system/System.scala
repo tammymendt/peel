@@ -1,6 +1,7 @@
 package eu.stratosphere.peel.core.beans.system
 
-import java.nio.file.{Paths, Files}
+
+import java.nio.file.{Files, Paths}
 import com.samskivert.mustache.Mustache
 import com.typesafe.config.ConfigFactory
 import eu.stratosphere.peel.core.beans.system.Lifespan.Lifespan
@@ -37,15 +38,18 @@ abstract class System(val name: String,
    * Creates a complete system installation with updated configuration and starts the system.
    */
   def setUp() = {
-    if (isUp) {
-      logger.info(s"System '$toString' is already up and running")
+    if (isRunning) {
+      if (isUp)
+        logger.info(s"System '$toString' is already up and running")
+      else
+        logger.warn(s"System '$toString' is running but not up. Shut down manually '$toString' or set its bean lifecycle to PROVIDED.")
     } else {
       logger.info(s"Starting system '$toString'")
 
       if (config.hasPath(s"system.$configKey.path.archive")) {
         if (!Files.exists(Paths.get(config.getString(s"system.$configKey.path.home")))) {
           logger.info(s"Extracting archive ${config.getString(s"system.$configKey.path.archive.src")} to ${config.getString(s"system.$configKey.path.archive.dst")}")
-          shell.untar(config.getString(s"system.$configKey.path.archive.src"), config.getString(s"system.$configKey.path.archive.dst"))
+          shell.extract(config.getString(s"system.$configKey.path.archive.src"), config.getString(s"system.$configKey.path.archive.dst"))
 
           logger.info(s"Changing owner of ${config.getString(s"system.$configKey.path.home")} to ${config.getString(s"system.$configKey.user")}:${config.getString(s"system.$configKey.group")}")
           shell ! "chown -R %s:%s %s".format(
@@ -66,7 +70,7 @@ abstract class System(val name: String,
    * Cleans up and shuts down the system.
    */
   def tearDown() = {
-    if (!isUp) {
+    if (!isRunning) {
       logger.info(s"System '$toString' is already down")
     } else {
       logger.info(s"Tearing down system '$toString'")
@@ -127,6 +131,16 @@ abstract class System(val name: String,
    * Stops the system.
    */
   protected def stop(): Unit
+
+  /**
+   * Checks whether a process for this system is already running.
+   *
+   * This is different from the value of `isUp`, as a system can be running, but not yet up and operational (i.e. if
+   * not all worker nodes of a distributed have connected).
+   *
+   * @return True if a system process for this system exists.
+   */
+  def isRunning: Boolean
 
   /**
    * Returns the template path closest to the given system and version.
