@@ -1,11 +1,8 @@
 package eu.stratosphere.peel.core.beans.experiment
 
-<<<<<<< HEAD
-=======
-import java.lang.{System => Sys}
->>>>>>> 0e588a72394aa1ce72f2a164b2273e01e1d161ce
-import java.nio.file.{Files, Path, Paths}
 
+import java.lang.{System => Sys}
+import java.nio.file.{Files, Path, Paths}
 import com.typesafe.config.Config
 import eu.stratosphere.peel.core.beans.data.{DataSet, ExperimentOutput}
 import eu.stratosphere.peel.core.beans.system.System

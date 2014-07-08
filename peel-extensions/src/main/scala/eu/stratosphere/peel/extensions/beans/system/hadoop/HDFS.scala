@@ -82,12 +82,6 @@ class HDFS(version: String, lifespan: Lifespan, dependencies: Set[System] = Set(
     isUp = false
   }
 
-  override protected def stop() = {
-    shell ! s"${config.getString("system.hadoop.path.home")}/bin/stop-dfs.sh"
-    if (config.getBoolean("system.hadoop.format")) format()
-    isUp = false
-  }
-
   // ---------------------------------------------------
   // FileSystem.
   // ---------------------------------------------------

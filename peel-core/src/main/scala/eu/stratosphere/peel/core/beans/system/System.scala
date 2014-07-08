@@ -140,7 +140,7 @@ abstract class System(val name: String,
       v = v.substring(0, Math.max(0, v.lastIndexOf('.')))
       z = Option(this.getClass.getResource(s"/templates/$configKey/$v/$path.mustache"))
     }
-    // if version template exists return its path, otherwise return the base tempalte path
+    // if version template exists return its path, otherwise return the base template path
     if (v.isEmpty)
       s"/templates/$configKey/$path.mustache"
     else
