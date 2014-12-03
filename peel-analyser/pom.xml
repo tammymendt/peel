@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>peel-analyser</artifactId>
+    <artifactId>peelanalyser</artifactId>
     <dependencies>
         <dependency>
             <groupId>log4j</groupId>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20131018</version>
+            <version>20140107</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -51,19 +51,6 @@
             <artifactId>hibernate-core</artifactId>
             <version>4.3.6.Final</version>
         </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>1.6.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-easymock</artifactId>
-            <version>1.6.1</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>eu.stratosphere</groupId>
             <artifactId>peel-core</artifactId>
