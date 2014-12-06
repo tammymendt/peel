@@ -6,8 +6,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 /**
- * A task is one task of a experimentRun. A task does have a number of taskInstances (threads).
- * Created by FAbian on 15.10.14.
+ * Created by ubuntu on 15.10.14.
  */
 @Entity
 public class Task {
@@ -45,7 +44,7 @@ public class Task {
         this.experimentRun = experimentRun;
     }
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn
     public Set<TaskInstance> getTaskInstances() {
         return taskInstances;

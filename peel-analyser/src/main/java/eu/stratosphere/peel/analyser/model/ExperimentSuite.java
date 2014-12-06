@@ -5,9 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A ExperimentSuite is a Suite of various Experiments
- * that can be executed on different systems.
- * Created by Fabian on 15.10.14.
+ * Created by ubuntu on 15.10.14.
  */
 @Entity
 public class ExperimentSuite {
@@ -28,7 +26,7 @@ public class ExperimentSuite {
         this.name = name;
     }
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn
     public Set<Experiment> getExperimentSet() {
         return experimentSet;

@@ -4,11 +4,7 @@ import javax.persistence.*;
 import java.util.*;
 
 /**
- * A ExperimentRun is a specific run of a Experiment. The field run tells which one of the
- * various runs of the experiment is this specific run.
- * A ExperimentRun consists of many Tasks.
- *
- * Created by Fabian on 18.10.14.
+ * Created by ubuntu on 18.10.14.
  */
 @Entity
 public class ExperimentRun {
@@ -34,7 +30,7 @@ public class ExperimentRun {
         this.experiment = experiment;
     }
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn
     public Set<Task> getTaskSet() {
         return taskSet;

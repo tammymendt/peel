@@ -5,8 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * The system the experiment was executed on
- * Created by Fabian on 15.10.14.
+ * Created by ubuntu on 15.10.14.
  */
 @Entity
 public class System {
@@ -48,7 +47,7 @@ public class System {
         Version = version;
     }
 
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn
     public Set<Experiment> getExperimentSet() {
         return experimentSet;

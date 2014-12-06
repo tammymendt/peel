@@ -9,6 +9,7 @@ import eu.stratosphere.peel.analyser.parser.Parser;
 import eu.stratosphere.peel.analyser.parser.ParserFlink;
 import eu.stratosphere.peel.analyser.parser.ParserSpark;
 import eu.stratosphere.peel.analyser.util.ExperimentRunFile;
+import eu.stratosphere.peel.analyser.util.HibernateUtil;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -66,6 +67,7 @@ public class ParserManager {
             }
 
             //setup Parser
+            parser.setSession(HibernateUtil.getSession());
             if (experimentRun != null) {
                 parser.setExperimentRun(experimentRun);
             } else {
@@ -83,7 +85,7 @@ public class ParserManager {
      * @throws PeelAnalyserException
      */
     void searchExperimentRuns() throws PeelAnalyserException{
-        if(!rootPath.isDirectory()) throw new PeelAnalyserException("The path is no directory. Please enter a valid directory.");
+        if(!rootPath.isDirectory()) throw new PeelAnalyserException("Der angegebene Pfad ist kein Verzeichnis. Bitte geben Sie ein Verzeichnis an.");
 
         File[] experimentDirectory = rootPath.listFiles();
         for (File anExperimentDirectory : experimentDirectory) {

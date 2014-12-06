@@ -4,9 +4,7 @@ import javax.persistence.*;
 import java.util.Date;
 
 /**
- * A TaskInstanceEvent is a event of a taskInstance. Every taskInstance has a name
- * and a value that can be of the type int, double, String and Date.
- * Created by Fabian on 01.11.14.
+ * Created by ubuntu on 01.11.14.
  */
 @Entity
 public class TaskInstanceEvents {
