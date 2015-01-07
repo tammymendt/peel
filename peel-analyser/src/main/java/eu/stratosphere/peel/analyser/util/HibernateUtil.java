@@ -1,32 +1,23 @@
 package eu.stratosphere.peel.analyser.util;
 
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.Configuration;
 
 /**
  * Created by Fabsi on 21.10.2014.
  */
 public class HibernateUtil {
-    private static final SessionFactory sessionFACTORY = buildSessionFactory();
+    public static ORM ormUtil = null;
 
-    private static SessionFactory buildSessionFactory() {
-        try {
-            return new Configuration().configure().buildSessionFactory();
-        } catch (Throwable e){
-            throw new ExceptionInInitializerError(e);
-        }
+    public static ORM getORM(){
+        if(ormUtil == null)
+            initORM();
+        return ormUtil;
     }
 
-    public static SessionFactory getSessionFACTORY(){
-        return sessionFACTORY;
+    public static void initORM() {
+        ormUtil = new ORMUtil();
     }
-
-    public static org.hibernate.Session getSession(){
-        if(sessionFACTORY.getCurrentSession() == null){
-            return sessionFACTORY.openSession();
-        } else {
-            return sessionFACTORY.getCurrentSession();
-        }
+    public static void deleteAll() {
+        ORMUtil.createSessionFactory();
     }
 
 }

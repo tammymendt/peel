@@ -4,9 +4,13 @@ import eu.stratosphere.peel.analyser.exception.PeelAnalyserException;
 import eu.stratosphere.peel.analyser.model.*;
 import eu.stratosphere.peel.analyser.model.System;
 import eu.stratosphere.peel.analyser.util.HibernateUtil;
+import eu.stratosphere.peel.analyser.util.ORM;
+import eu.stratosphere.peel.analyser.util.ORMUtil;
+import eu.stratosphere.peel.analyser.util.QueryParameter;
 import junit.framework.TestCase;
 import org.easymock.EasyMock;
-import org.hibernate.Session;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
@@ -25,25 +29,22 @@ public class ParserFlinkTest extends TestCase {
     String experimentName = "wordcountRun";
     int experimentRuns = 5;
     int experimentRunRun = 1;
+    ORM orm = HibernateUtil.getORM();
 
-    //remember to close session!
+    @Before
     protected void setUp() throws Exception{
-
-
-
-
         try {
-            //create session
-            HibernateUtil.getSession().beginTransaction();
+            HibernateUtil.deleteAll();
+            orm.beginTransaction();
 
             //create Experiment Suite
             ExperimentSuite experimentSuite = new ExperimentSuite();
             experimentSuite.setName(experimentSuiteName);
-            HibernateUtil.getSession().save(experimentSuite);
+            orm.save(experimentSuite);
 
             System system = new System();
             system.setName("flink");
-            HibernateUtil.getSession().save(system);
+            orm.save(system);
 
             //create Experiment and connect it to ExperimentSuite
             Experiment experiment = new Experiment();
@@ -52,18 +53,20 @@ public class ParserFlinkTest extends TestCase {
             experiment.setRuns(experimentRuns);
             experiment.setSystem(system);
             system.getExperimentSet().add(experiment);
-            HibernateUtil.getSession().save(experiment);
+            orm.save(experiment);
             experimentSuite.getExperimentSet().add(experiment);
 
             //create ExperimentRun and add it to Experiment
             experimentRun = new ExperimentRun();
             experimentRun.setExperiment(experiment);
             experimentRun.setRun(experimentRunRun);
-            HibernateUtil.getSession().save(experimentRun);
+            orm.save(experimentRun);
             experiment.getExperimentRunSet().add(experimentRun);
 
-        } finally {
-            HibernateUtil.getSession().getTransaction().rollback();
+            orm.commitTransaction();
+        } catch (Exception e) {
+            orm.commitTransaction();
+            throw e;
         }
     }
 
@@ -82,22 +85,23 @@ public class ParserFlinkTest extends TestCase {
         Date date = dateFormat.parse("15:34:12,930");
         Integer subTaskNumber = 1;
 
-        ParserFlink parserFlink = new ParserFlink(experimentRun, HibernateUtil.getSession());
+        ParserFlink parserFlink = new ParserFlink(experimentRun);
         parserFlink.parse(reader);
 
-        HibernateUtil.getSession().beginTransaction();
+        orm.beginTransaction();
         try {
 
-            List<Task> taskListResult = HibernateUtil.getSession().createQuery("from Task").list();
+            List<Task> taskListResult = orm.executeQuery(Task.class,
+                            "from Task");
             Task taskResult = taskListResult.get(0);
             TaskInstance taskInstanceResult = taskResult.getTaskInstances().iterator().next();
 
             EasyMock.verify(reader);
-            assertEquals(date, taskInstanceResult.getEventByName("startingRunning").getValueTimestamp());
+            assertEquals(date, taskInstanceResult.getEventByName("starting to running").getValueTimestamp());
             assertEquals(subTaskNumber, taskInstanceResult.getSubTaskNumber());
             assertEquals(1, taskResult.getTaskInstances().size());
         } finally {
-            HibernateUtil.getSession().getTransaction().rollback();
+            orm.commitTransaction();
         }
     }
 
@@ -119,21 +123,22 @@ public class ParserFlinkTest extends TestCase {
         Date scheduling = dateFormat.parse("15:32:25,650");
         Date finished = dateFormat.parse("15:32:27,819");
 
-        ParserFlink parserFlink = new ParserFlink(experimentRun, HibernateUtil.getSession());
+        ParserFlink parserFlink = new ParserFlink(experimentRun);
         parserFlink.parse(reader);
 
-        HibernateUtil.getSession().beginTransaction();
+        orm.beginTransaction();
         try {
 
-            List<ExperimentRun> experimentRunList = HibernateUtil.getSession().createQuery("from ExperimentRun").list();
-            ExperimentRun experimentRunResult = experimentRunList.get(1);
+            List<ExperimentRun> experimentRunList = orm.executeQuery(
+                            ExperimentRun.class, "from ExperimentRun");
+            ExperimentRun experimentRunResult = experimentRunList.get(0);
 
             EasyMock.verify(reader);
             assertEquals(creating, experimentRunResult.getSubmitTime());
             assertEquals(scheduling, experimentRunResult.getDeployed());
             assertEquals(finished, experimentRunResult.getFinished());
         }finally {
-            HibernateUtil.getSession().getTransaction().rollback();
+            orm.commitTransaction();
         }
     }
 
@@ -143,19 +148,20 @@ public class ParserFlinkTest extends TestCase {
         InputStream inputStream = classLoader.getResourceAsStream("flink-ubuntu-jobmanager-ubuntu-SVP1321L1EBI");
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-        ParserFlink parserFlink = new ParserFlink(experimentRun, HibernateUtil.getSession());
+        ParserFlink parserFlink = new ParserFlink(experimentRun);
         parserFlink.parse(reader);
         DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss,SSS");
 
         String query = "select experimentRun from ExperimentRun as experimentRun join experimentRun.experiment as experiment join experiment.system as system join experiment.experimentSuite as experimentSuite where experiment.name = :experimentName AND system.name = :systemName AND experimentSuite.name = :experimentSuiteName";
-        HibernateUtil.getSession().beginTransaction();
-        List<ExperimentRun> experimentRunList = HibernateUtil.getSession().createQuery(query)
-                .setParameter("experimentName", experimentName)
-                .setParameter("systemName", "flink")
-                .setParameter("experimentSuiteName", experimentSuiteName)
-                .list();
+        orm.beginTransaction();
+        List<ExperimentRun> experimentRunList = orm.executeQuery(
+                        ExperimentRun.class, query,
+                        new QueryParameter("experimentName", experimentName),
+                        new QueryParameter("systemName", "flink"),
+                        new QueryParameter("experimentSuiteName",
+                                        experimentSuiteName));
 
-        HibernateUtil.getSession().getTransaction().commit();
+        orm.commitTransaction();
         ExperimentRun experimentRunDatabase = experimentRunList.get(0);
 
         //test 1
@@ -163,7 +169,7 @@ public class ParserFlinkTest extends TestCase {
         Date resultScheduledReduce4 = experimentRunDatabase.
                 taskByTaskType("Reduce").
                 taskInstanceBySubtaskNumber(4).
-                getEventByName("created to Scheduled").
+                getEventByName("created to scheduled").
                 getValueTimestamp();
         assertEquals(createScheduledReduce4, resultScheduledReduce4);
 
@@ -185,5 +191,7 @@ public class ParserFlinkTest extends TestCase {
                 getValueTimestamp();
         assertEquals(startingChain1, resultStartingChain1);
     }
+
+
 
 }
