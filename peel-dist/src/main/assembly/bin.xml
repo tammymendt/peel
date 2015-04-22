@@ -99,6 +99,13 @@
             <fileMode>0700</fileMode>
         </file>
 
+        <!-- copy batch file for windows user -->
+        <file>
+            <source>src/main/assembly/bin/peel.bat</source>
+            <destName>peelWindows.bat</destName>
+            <fileMode>0700</fileMode>
+        </file>
+
         <!-- create a VERSION file to the project root -->
         <file>
             <source>src/main/assembly/VERSION</source>

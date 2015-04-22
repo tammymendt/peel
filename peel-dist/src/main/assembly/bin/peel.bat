@@ -1,0 +1,1 @@
+java -cp lib\* eu.stratosphere.peel.core.cli.Peel %*
