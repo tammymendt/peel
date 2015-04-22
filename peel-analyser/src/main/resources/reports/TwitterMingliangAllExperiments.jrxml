@@ -84,30 +84,38 @@
 		</box>
 	</style>
 	<subDataset name="EventRunDataset" uuid="c0acb4eb-018c-470b-a33e-3e55cf38b676">
+		<parameter name="DataSetName" class="java.lang.String">
+			<defaultValueExpression><![CDATA["%"]]></defaultValueExpression>
+		</parameter>
+		<parameter name="DegreeOfParallism" class="java.lang.String">
+			<defaultValueExpression><![CDATA["%320%"]]></defaultValueExpression>
+		</parameter>
+		<parameter name="MemorySize" class="java.lang.String">
+			<defaultValueExpression><![CDATA["%14G%"]]></defaultValueExpression>
+		</parameter>
 		<queryString>
 			<![CDATA[SELECT
-     EXPERIMENT."NAME" AS EXPERIMENT_NAME,
-     EXPERIMENTSUITE."NAME" AS EXPERIMENTSUITE_NAME,
-     SYSTEM."NAME" AS SYSTEM_NAME,
-     EXPERIMENT."MEDIANEXPERIMENTRUNTIME" AS EXPERIMENT_MEDIANEXPERIMENTRUNTIME,
-     EXPERIMENT."AVERAGEEXPERIMENTRUNTIME" AS EXPERIMENT_AVERAGEEXPERIMENTRUNTIME,
-     Substring(ExperimentSuite.Name, 10, Length(ExperimentSuite.Name) - 15) as DatasetName,
+     SYSTEM."NAME" AS System,
+     EXPERIMENT."MEDIANEXPERIMENTRUNTIME" AS Median,
+     Substring(ExperimentSuite.Name, 10, Length(ExperimentSuite.Name) - 15) AS DatasetName,
      case when Experiment.Name Like '%mem14G%' OR Experiment.Name Like '%mem11G%' then
-     Substring(Experiment.Name, 7, Length(Experiment.Name) - 13) else Substring(Experiment.Name, 7, Length(Experiment.Name) - 12)
-     end as DegreeOfParallism,
-     case when Experiment.Name Like '%mem14G%' OR Experiment.Name Like '%mem11G%'
-     then substring(Experiment.Name, Length(Experiment.Name) - 5, Length(Experiment.Name)) else substring(Experiment.Name,
-     Length(Experiment.Name) - 4, Length(Experiment.Name)) end as MemorySize
+         substring(Experiment.Name, 10, Length(Experiment.Name) - 16) else
+         substring(Experiment.Name, 10, Length(Experiment.Name) - 15)   end AS DegreeOfParallism,
+     case when Experiment.Name Like '%mem14G%' OR Experiment.Name Like '%mem11G%' then
+        substring(Experiment.Name, Length(Experiment.Name) - 2, Length(Experiment.Name)) else
+        substring(Experiment.Name, Length(Experiment.Name) - 1, Length(Experiment.Name))
+        end AS MemorySize
 FROM
-     "EXPERIMENT" EXPERIMENT RIGHT OUTER JOIN "SYSTEM" SYSTEM ON EXPERIMENT."SYSTEM_SYSTEMID" = SYSTEM."SYSTEMID"
-     RIGHT OUTER JOIN "EXPERIMENTSUITE" EXPERIMENTSUITE ON EXPERIMENT."EXPERIMENTSUITE_EXPERIMENTSUITEID"
-     = EXPERIMENTSUITE."EXPERIMENTSUITEID"]]>
+     "EXPERIMENT" EXPERIMENT RIGHT OUTER JOIN "SYSTEM" SYSTEM ON
+     EXPERIMENT."SYSTEM_SYSTEMID" = SYSTEM."SYSTEMID"
+     RIGHT OUTER JOIN "EXPERIMENTSUITE" EXPERIMENTSUITE ON
+     EXPERIMENT."EXPERIMENTSUITE_EXPERIMENTSUITEID"  = EXPERIMENTSUITE."EXPERIMENTSUITEID"
+WHERE
+     Experiment.Name Like $P{MemorySize} AND Experiment.Name Like $P{DegreeOfParallism}
+     AND ExperimentSuite.Name Like $P{DataSetName}]]>
 		</queryString>
-		<field name="EXPERIMENT_NAME" class="java.lang.String"/>
-		<field name="EXPERIMENTSUITE_NAME" class="java.lang.String"/>
-		<field name="SYSTEM_NAME" class="java.lang.String"/>
-		<field name="EXPERIMENT_MEDIANEXPERIMENTRUNTIME" class="java.lang.Long"/>
-		<field name="EXPERIMENT_AVERAGEEXPERIMENTRUNTIME" class="java.lang.Long"/>
+		<field name="SYSTEM" class="java.lang.String"/>
+		<field name="MEDIAN" class="java.lang.Long"/>
 		<field name="DATASETNAME" class="java.lang.String"/>
 		<field name="DEGREEOFPARALLISM" class="java.lang.String"/>
 		<field name="MEMORYSIZE" class="java.lang.String"/>
@@ -168,18 +176,24 @@ Group By Experiment.ExperimentID]]>
 	</subDataset>
 	<subDataset name="EventRunDataset_1_2" uuid="b01e9140-1bbe-4e70-9a48-157f024c4474">
 		<queryString>
-			<![CDATA[SELECT
-     avg(DATEDIFF(millisecond,ExperimentRun."DEPLOYED",ExperimentRun."FINISHED")) AS Runtime,
-     Experiment.Name
+			<![CDATA[SELECT avg(ExpRunCPUTime.TOTAL_CPU_TIME) as AVG_CPU_TIME, ExpRunCPUTime.ExperimentName as ExperimentName
+FROM (SELECT
+     sum(TASKINSTANCEEVENTS.VALUEINT) AS TOTAL_CPU_TIME,
+     EXPERIMENTRUN."RUN" AS Run,
+     Experiment.name as ExperimentName
 FROM
-     "EXPERIMENT" Experiment INNER JOIN "EXPERIMENTRUN" ExperimentRun ON Experiment."EXPERIMENTID" =
-     ExperimentRun."EXPERIMENTRUNSET_EXPERIMENTID"
-Group By Experiment.ExperimentID]]>
+     "TASKINSTANCE" TASKINSTANCE INNER JOIN "TASKINSTANCEEVENTS" TASKINSTANCEEVENTS ON TASKINSTANCE."TASKINSTANCEID" = TASKINSTANCEEVENTS."TASKINSTANCEEVENTSSET_TASKINSTANCEID"
+     INNER JOIN "TASK" TASK ON TASKINSTANCE."TASKINSTANCES_TASKID" = TASK."TASKID"
+     INNER JOIN "EXPERIMENTRUN" EXPERIMENTRUN ON TASK."TASKSET_EXPERIMENTRUNID" = EXPERIMENTRUN."EXPERIMENTRUNID"
+     INNER JOIN "EXPERIMENT" EXPERIMENT ON EXPERIMENTRUN."EXPERIMENTRUNSET_EXPERIMENTID" = EXPERIMENT."EXPERIMENTID"
+WHERE
+     TASKINSTANCEEVENTS.EventName = 'Executor Run Time'
+GROUP BY
+     EXPERIMENTRUN.RUN, Experiment.Name) as ExpRunCPUTime
+GROUP BY ExperimentName]]>
 		</queryString>
-		<field name="RUNTIME" class="java.lang.Long"/>
-		<field name="NAME" class="java.lang.String">
-			<fieldDescription><![CDATA[]]></fieldDescription>
-		</field>
+		<field name="AVG_CPU_TIME" class="java.lang.Long"/>
+		<field name="EXPERIMENTNAME" class="java.lang.String"/>
 	</subDataset>
 	<queryString>
 		<![CDATA[SELECT
