@@ -189,13 +189,15 @@ class ParserManagerHelper {
      */
     protected static boolean isJobmanager(String filename, String system){
         Pattern pattern = null;
+        Pattern sparkOld = Pattern.compile("EVENT_LOG_1");
         if(system.equals("flink")) {
             pattern = Pattern.compile("([A-z0-9-])+(-jobmanager-)([A-z0-9-])+(?=.log)");
         } else if(system.equals("spark")){
             pattern = Pattern.compile("app-*");
         }
         Matcher matcher = pattern.matcher(filename);
-        return matcher.find();
+        Matcher sparkOldMatcher = sparkOld.matcher(filename);
+        return matcher.find() || sparkOldMatcher.find();
     }
 
     /**
